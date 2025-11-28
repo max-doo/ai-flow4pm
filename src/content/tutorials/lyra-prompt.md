@@ -8,7 +8,7 @@ toc: true
 cover: ""
 author: "Doo"
 series: "提示词工程"
-order: 3
+order: 4
 ---
 
 ## Lyra提示词介绍

@@ -1,7 +1,7 @@
 ---
 title: "欢迎来到 AI Flow 4 PM"
 description: "这是一个基于 Astro 和 Markdown 构建的博客网站，支持多种文章模板"
-date: 2025-11-26
+date: 2025-11-25
 template: note
 tags: ["博客", "Astro", "Markdown"]
 toc: true

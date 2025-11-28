@@ -8,7 +8,7 @@ toc: true
 cover: "/img/google-ai-studio/banner.png"
 author: "Doo"
 series: "AI 产品设计"
-order: 2
+order: 3
 ---
 
 <div class="video-container-vertical">

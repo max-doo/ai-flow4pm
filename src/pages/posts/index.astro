@@ -28,11 +28,25 @@ type Article = {
 };
 
 // 合并所有内容并按日期排序
+// 同一天的同类型文章：先按 frontmatter 中的 order（升序）再按 id 排序，保证顺序稳定、可控
 const allArticles: Article[] = [
   ...works.map((w: CollectionEntry<'works'>) => ({ ...w, collection: 'works' })),
   ...tutorials.map((t: CollectionEntry<'tutorials'>) => ({ ...t, collection: 'tutorials' })),
   ...notes.map((n: CollectionEntry<'notes'>) => ({ ...n, collection: 'notes' })),
-].sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
+].sort((a, b) => {
+  // 1）优先按日期（新的在前）
+  const dateDiff = new Date(b.data.date).getTime() - new Date(a.data.date).getTime();
+  if (dateDiff !== 0) return dateDiff;
+
+  // 2）同一天时，按 frontmatter 中的 order 字段升序（没有则视为 0）
+  //    这样你可以通过手动维护 order 字段来控制同一天文章的展示顺序，通常与“创建顺序”一致
+  const orderA = (a.data as any).order ?? 0;
+  const orderB = (b.data as any).order ?? 0;
+  if (orderA !== orderB) return orderA - orderB;
+
+  // 3）再按 id 做兜底排序，确保结果稳定
+  return a.id.localeCompare(b.id);
+});
 
 // 确保 baseUrl 以斜杠结尾
 const rawBaseUrl = import.meta.env.BASE_URL;
