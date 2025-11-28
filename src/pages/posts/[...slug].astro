@@ -1,0 +1,76 @@
+---
+/**
+ * 统一文章详情页（/posts/[slug]）
+ * 根据 slug 在 works、tutorials 和 notes 集合中查找内容并渲染对应模板
+ */
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import TutorialLayout from '../../layouts/TutorialLayout.astro';
+import NoteLayout from '../../layouts/NoteLayout.astro';
+import WorkLayout from '../../layouts/WorkLayout.astro';
+
+type WorkEntry = CollectionEntry<'works'>;
+type TutorialEntry = CollectionEntry<'tutorials'>;
+type NoteEntry = CollectionEntry<'notes'>;
+type Article = (WorkEntry | TutorialEntry | NoteEntry) & { collection: 'works' | 'tutorials' | 'notes' };
+
+interface Props {
+  article: Article;
+}
+
+// 生成静态路径：合并作品、教程和笔记
+export async function getStaticPaths() {
+  const works = await getCollection('works');
+  const tutorials = await getCollection('tutorials');
+  const notes = await getCollection('notes');
+
+  // 过滤草稿
+  const publishedWorks = works.filter((w: WorkEntry) => !w.data.draft);
+  const publishedTutorials = tutorials.filter((t: TutorialEntry) => !t.data.draft);
+  const publishedNotes = notes.filter((n: NoteEntry) => !n.data.draft);
+
+  const workPaths = publishedWorks.map((work: WorkEntry) => ({
+    params: { slug: work.id },
+    props: { article: { ...work, collection: 'works' as const } },
+  }));
+
+  const tutorialPaths = publishedTutorials.map((tutorial: TutorialEntry) => ({
+    params: { slug: tutorial.id },
+    props: { article: { ...tutorial, collection: 'tutorials' as const } },
+  }));
+
+  const notePaths = publishedNotes.map((note: NoteEntry) => ({
+    params: { slug: note.id },
+    props: { article: { ...note, collection: 'notes' as const } },
+  }));
+
+  return [...workPaths, ...tutorialPaths, ...notePaths];
+}
+
+const { article } = Astro.props as Props;
+const { Content, headings } = await render(article);
+
+// 模板类型：优先使用 frontmatter.template，其次按集合类型推断
+const template =
+  article.data.template ??
+  (article.collection === 'works'
+    ? 'work'
+    : article.collection === 'tutorials'
+    ? 'tutorial'
+    : 'note');
+---
+
+{template === 'work' ? (
+  <WorkLayout frontmatter={article.data}>
+    <Content />
+  </WorkLayout>
+) : template === 'tutorial' ? (
+  <TutorialLayout frontmatter={article.data} headings={headings}>
+    <Content />
+  </TutorialLayout>
+) : (
+  <NoteLayout frontmatter={article.data}>
+    <Content />
+  </NoteLayout>
+)}
+
+

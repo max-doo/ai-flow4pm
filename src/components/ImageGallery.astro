@@ -1,0 +1,177 @@
+---
+/**
+ * 图片画廊组件
+ * 响应式网格布局，支持点击放大预览
+ */
+interface ImageItem {
+  src: string;
+  alt?: string;
+  caption?: string;
+}
+
+interface Props {
+  images: ImageItem[];
+  columns?: 2 | 3 | 4;
+}
+
+const { images, columns = 3 } = Astro.props;
+
+// 列数配置
+const columnClasses = {
+  2: 'grid-cols-1 md:grid-cols-2',
+  3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
+  4: 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4',
+};
+---
+
+<div class={`image-gallery grid ${columnClasses[columns]} gap-4`}>
+  {images.map((image, index) => (
+    <figure class="gallery-item group relative overflow-hidden rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
+      <button 
+        class="gallery-trigger w-full cursor-zoom-in"
+        data-index={index}
+        aria-label={`查看图片: ${image.alt || '图片'}`}
+      >
+        <img 
+          src={image.src} 
+          alt={image.alt || ''} 
+          class="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+          loading="lazy"
+        />
+        <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+          <svg class="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+          </svg>
+        </div>
+      </button>
+      {image.caption && (
+        <figcaption class="p-3 text-sm text-[var(--color-text-muted)]">
+          {image.caption}
+        </figcaption>
+      )}
+    </figure>
+  ))}
+</div>
+
+<!-- 灯箱预览模态框 -->
+<div id="lightbox" class="lightbox fixed inset-0 z-50 hidden bg-black/90 backdrop-blur-sm">
+  <button 
+    id="lightbox-close" 
+    class="absolute top-4 right-4 text-white/80 hover:text-white transition-colors z-10"
+    aria-label="关闭"
+  >
+    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  </button>
+  
+  <button 
+    id="lightbox-prev" 
+    class="absolute left-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white transition-colors"
+    aria-label="上一张"
+  >
+    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+    </svg>
+  </button>
+  
+  <button 
+    id="lightbox-next" 
+    class="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white transition-colors"
+    aria-label="下一张"
+  >
+    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+    </svg>
+  </button>
+  
+  <div class="flex items-center justify-center h-full p-8">
+    <img id="lightbox-image" src="" alt="" class="max-w-full max-h-full object-contain" />
+  </div>
+  
+  <p id="lightbox-caption" class="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-center max-w-lg px-4"></p>
+</div>
+
+<script define:vars={{ images }}>
+  // 图片画廊灯箱功能
+  document.addEventListener('DOMContentLoaded', () => {
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImage = document.getElementById('lightbox-image');
+    const lightboxCaption = document.getElementById('lightbox-caption');
+    const lightboxClose = document.getElementById('lightbox-close');
+    const lightboxPrev = document.getElementById('lightbox-prev');
+    const lightboxNext = document.getElementById('lightbox-next');
+    const galleryTriggers = document.querySelectorAll('.gallery-trigger');
+    
+    if (!lightbox || !lightboxImage) return;
+    
+    let currentIndex = 0;
+    const imageList = images;
+    
+    function showImage(index) {
+      if (index < 0 || index >= imageList.length) return;
+      currentIndex = index;
+      const image = imageList[index];
+      lightboxImage.src = image.src;
+      lightboxImage.alt = image.alt || '';
+      if (lightboxCaption) {
+        lightboxCaption.textContent = image.caption || '';
+      }
+    }
+    
+    function openLightbox(index) {
+      showImage(index);
+      lightbox.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+    
+    function closeLightbox() {
+      lightbox.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+    
+    // 绑定事件
+    galleryTriggers.forEach((trigger) => {
+      trigger.addEventListener('click', () => {
+        const index = parseInt(trigger.dataset.index || '0', 10);
+        openLightbox(index);
+      });
+    });
+    
+    lightboxClose?.addEventListener('click', closeLightbox);
+    
+    lightboxPrev?.addEventListener('click', () => {
+      showImage((currentIndex - 1 + imageList.length) % imageList.length);
+    });
+    
+    lightboxNext?.addEventListener('click', () => {
+      showImage((currentIndex + 1) % imageList.length);
+    });
+    
+    // ESC 关闭
+    document.addEventListener('keydown', (e) => {
+      if (!lightbox.classList.contains('hidden')) {
+        if (e.key === 'Escape') closeLightbox();
+        if (e.key === 'ArrowLeft') showImage((currentIndex - 1 + imageList.length) % imageList.length);
+        if (e.key === 'ArrowRight') showImage((currentIndex + 1) % imageList.length);
+      }
+    });
+    
+    // 点击背景关闭
+    lightbox.addEventListener('click', (e) => {
+      if (e.target === lightbox) closeLightbox();
+    });
+  });
+</script>
+
+<style>
+  .lightbox {
+    animation: fadeIn 0.2s ease;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+</style>
+

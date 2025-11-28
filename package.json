@@ -1,0 +1,22 @@
+{
+  "name": "ai-flow4pm-blog",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "基于 Markdown 模板的博客网站",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "astro": "^5.8.0"
+  },
+  "devDependencies": {
+    "@astrojs/mdx": "^4.2.4",
+    "@tailwindcss/typography": "^0.5.16",
+    "@tailwindcss/vite": "^4.1.5",
+    "tailwindcss": "^4.1.5",
+    "typescript": "^5.8.3"
+  }
+}

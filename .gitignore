@@ -1,0 +1,34 @@
+# 依赖目录
+node_modules/
+
+# 构建输出
+dist/
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# 编辑器
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 日志
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Astro 缓存
+.astro/
+
+# TypeScript
+*.tsbuildinfo
+

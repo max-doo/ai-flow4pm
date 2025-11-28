@@ -1,0 +1,129 @@
+---
+/**
+ * 作品布局模板
+ * 更偏展示型，适合产品/案例作品展示
+ */
+import BaseLayout from './BaseLayout.astro';
+import TagList from '../components/TagList.astro';
+import Breadcrumb from '../components/Breadcrumb.astro';
+
+interface Props {
+  frontmatter: {
+    title: string;
+    description?: string;
+    date: Date;
+    updatedDate?: Date;
+    tags?: string[];
+    cover?: string;
+    author?: string;
+  };
+}
+
+const { frontmatter } = Astro.props;
+const { title, description, date, updatedDate, tags = [], cover, author = '匿名' } = frontmatter;
+
+// 确保 baseUrl 以斜杠结尾
+const rawBaseUrl = import.meta.env.BASE_URL;
+const baseUrl = rawBaseUrl.endsWith('/') ? rawBaseUrl : `${rawBaseUrl}/`;
+
+// 面包屑
+const breadcrumbItems = [
+  { label: '首页', href: baseUrl },
+  { label: '文章', href: `${baseUrl}posts` },
+  { label: '作品' },
+];
+
+// 格式化日期
+const formatDate = (d: Date) => {
+  return new Date(d).toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+---
+
+<BaseLayout title={title} description={description} ogImage={cover}>
+  <article class="max-w-5xl mx-auto px-4 md:px-8 py-12">
+    <!-- 面包屑导航 -->
+    <Breadcrumb items={breadcrumbItems} />
+
+    <!-- 头图 -->
+    {cover && (
+      <div class="mb-10 rounded-3xl overflow-hidden shadow-xl border border-[var(--color-border)]">
+        <img src={cover} alt={title} class="w-full h-80 object-cover" />
+      </div>
+    )}
+
+    <!-- 标题与元信息 -->
+    <header class="mb-10">
+      <h1 class="text-3xl md:text-4xl font-bold text-[var(--color-text)] mb-4 leading-tight">
+        {title}
+      </h1>
+
+      {description && (
+        <p class="text-lg text-[var(--color-text-secondary)] mb-5 leading-relaxed">
+          {description}
+        </p>
+      )}
+
+      <div class="flex flex-wrap items-center gap-3 text-sm text-[var(--color-text-muted)]">
+        <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-yellow)]/15 text-[#B89A00]">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h12M3 17h6" />
+          </svg>
+          作品展示
+        </span>
+
+        <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-blue)]/10 text-[var(--color-blue)]">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          {author}
+        </span>
+
+        <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-orange)]/10 text-[var(--color-orange)]">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          {formatDate(date)}
+        </span>
+
+        {updatedDate && (
+          <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-green)]/10 text-[var(--color-green)]">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            更新于 {formatDate(updatedDate)}
+          </span>
+        )}
+      </div>
+
+      {tags.length > 0 && (
+        <div class="mt-6">
+          <TagList tags={tags} />
+        </div>
+      )}
+    </header>
+
+    <!-- 正文内容 -->
+    <section class="prose prose-lg max-w-none bg-white rounded-3xl p-6 md:p-10 border border-[var(--color-border)] shadow-sm">
+      <slot />
+    </section>
+
+    <!-- 底部返回 -->
+    <footer class="mt-12 text-center">
+      <a 
+        href={`${baseUrl}posts`} 
+        class="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-orange)] hover:text-[var(--color-orange)] transition-all text-sm md:text-base"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        返回文章列表
+      </a>
+    </footer>
+  </article>
+</BaseLayout>
+
+

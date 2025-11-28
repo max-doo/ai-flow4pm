@@ -1,0 +1,109 @@
+---
+/**
+ * 目录导航组件（Table of Contents）
+ * 简约活泼风格，从 Markdown 标题自动生成，支持滚动高亮
+ */
+interface Props {
+  headings: { depth: number; slug: string; text: string }[];
+}
+
+const { headings } = Astro.props;
+
+// 只显示 h2 和 h3 级别的标题
+const filteredHeadings = headings.filter(h => h.depth >= 2 && h.depth <= 3);
+---
+
+{filteredHeadings.length > 0 && (
+  <nav class="toc bg-white rounded-2xl p-5 border border-[var(--color-border)] shadow-sm">
+    <h4 class="text-sm font-semibold text-[var(--color-text)] mb-4 flex items-center gap-2">
+      <span class="w-6 h-6 rounded-lg bg-[var(--color-orange)]/10 flex items-center justify-center">
+        <svg class="w-3.5 h-3.5 text-[var(--color-orange)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+        </svg>
+      </span>
+      目录
+    </h4>
+    <ul class="space-y-1 text-sm">
+      {filteredHeadings.map((heading) => (
+        <li 
+          class={heading.depth === 3 ? 'ml-4' : ''}
+        >
+          <a 
+            href={`#${heading.slug}`}
+            class="toc-link block py-1.5 px-3 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg)] transition-all"
+            data-heading={heading.slug}
+          >
+            {heading.text}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+)}
+
+<style>
+  .toc {
+    max-height: calc(100vh - 8rem);
+    overflow-y: auto;
+  }
+  
+  .toc::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .toc::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 2px;
+  }
+  
+  /* 当前激活的链接样式 */
+  .toc-link.active {
+    color: var(--color-orange);
+    background: rgba(245, 166, 35, 0.1);
+    font-weight: 500;
+  }
+</style>
+
+<script>
+  // 滚动监听，高亮当前可见的章节
+  document.addEventListener('DOMContentLoaded', () => {
+    const tocLinks = document.querySelectorAll<HTMLAnchorElement>('.toc-link');
+    const headingElements = document.querySelectorAll('h2, h3');
+    
+    if (tocLinks.length === 0 || headingElements.length === 0) return;
+    
+    const observerOptions: IntersectionObserverInit = {
+      rootMargin: '-80px 0px -80% 0px',
+      threshold: 0,
+    };
+    
+    let currentActiveLink: HTMLAnchorElement | null = null;
+    
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const id = entry.target.getAttribute('id');
+          if (id) {
+            // 移除之前的激活状态
+            if (currentActiveLink) {
+              currentActiveLink.classList.remove('active');
+            }
+            
+            // 添加新的激活状态
+            const activeLink = document.querySelector<HTMLAnchorElement>(`.toc-link[data-heading="${id}"]`);
+            if (activeLink) {
+              activeLink.classList.add('active');
+              currentActiveLink = activeLink;
+            }
+          }
+        }
+      });
+    }, observerOptions);
+    
+    headingElements.forEach((heading) => {
+      if (heading.id) {
+        observer.observe(heading);
+      }
+    });
+  });
+</script>

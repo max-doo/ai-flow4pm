@@ -1,0 +1,91 @@
+---
+/**
+ * 笔记布局模板
+ * 简约活泼风格，适用于短笔记和随想
+ */
+import BaseLayout from './BaseLayout.astro';
+import TagList from '../components/TagList.astro';
+import Breadcrumb from '../components/Breadcrumb.astro';
+
+interface Props {
+  frontmatter: {
+    title: string;
+    description?: string;
+    date: Date;
+    tags?: string[];
+    author?: string;
+  };
+}
+
+const { frontmatter } = Astro.props;
+const { title, description, date, tags = [], author = '匿名' } = frontmatter;
+
+// 确保 baseUrl 以斜杠结尾
+const rawBaseUrl = import.meta.env.BASE_URL;
+const baseUrl = rawBaseUrl.endsWith('/') ? rawBaseUrl : `${rawBaseUrl}/`;
+
+// 面包屑导航
+const breadcrumbItems = [
+  { label: '首页', href: baseUrl },
+  { label: '文章', href: `${baseUrl}posts` },
+  { label: '笔记' },
+];
+
+// 格式化日期
+const formatDate = (d: Date) => {
+  return new Date(d).toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+---
+
+<BaseLayout title={title} description={description}>
+  <article class="max-w-3xl mx-auto px-4 md:px-8 py-12">
+    <!-- 面包屑导航 -->
+    <Breadcrumb items={breadcrumbItems} />
+    
+    <!-- 笔记头部 -->
+    <header class="mb-8">
+      <div class="flex items-center gap-3 text-sm text-[var(--color-text-muted)] mb-4">
+        <span class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--color-green)]/10 text-[var(--color-green)]">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+          笔记
+        </span>
+        <span class="text-[var(--color-border)]">•</span>
+        <span>{formatDate(date)}</span>
+        <span class="text-[var(--color-border)]">•</span>
+        <span>{author}</span>
+      </div>
+      
+      <h1 class="text-2xl md:text-3xl font-bold text-[var(--color-text)] mb-4 leading-tight">
+        {title}
+      </h1>
+      
+      {tags.length > 0 && (
+        <TagList tags={tags} size="sm" />
+      )}
+    </header>
+
+    <!-- 笔记内容 -->
+    <div class="prose max-w-none bg-white rounded-2xl p-6 md:p-8 border border-[var(--color-border)] shadow-sm">
+      <slot />
+    </div>
+
+    <!-- 底部 -->
+    <footer class="mt-8 text-center">
+      <a 
+        href={`${baseUrl}posts`} 
+        class="inline-flex items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-orange)] transition-colors text-sm"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        返回文章列表
+      </a>
+    </footer>
+  </article>
+</BaseLayout>

@@ -1,0 +1,558 @@
+---
+/**
+ * 图片预览弹窗组件
+ * 通用组件，可在任何页面使用
+ * 
+ * 使用方法：
+ * 1. 在页面中引入组件：<ImageLightbox />
+ * 2. 为需要预览的图片容器添加 data-lightbox-container 属性
+ *    例如：<div class="content" data-lightbox-container>
+ * 3. 容器内的所有 img 元素都会自动支持点击预览
+ */
+interface Props {
+  /** 是否自动初始化（默认 true） */
+  autoInit?: boolean;
+}
+
+const { autoInit = true } = Astro.props;
+---
+
+<!-- 图片预览弹窗 -->
+<div id="image-lightbox" class="lightbox-overlay">
+  <!-- 顶部标题栏 -->
+  <div class="lightbox-header">
+    <div id="lightbox-caption" class="lightbox-caption"></div>
+  </div>
+
+  <!-- 右上角关闭按钮 -->
+  <button class="lightbox-close" aria-label="关闭预览">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M18 6L6 18M6 6l12 12"/>
+    </svg>
+  </button>
+
+  <!-- 图片区域（点击关闭） -->
+  <div class="lightbox-image-area">
+    <div class="lightbox-image-wrapper">
+      <img id="lightbox-image" src="" alt="" />
+    </div>
+  </div>
+
+  <!-- 底部操作栏 -->
+  <div class="lightbox-toolbar">
+    <!-- 上一张 -->
+    <button class="lightbox-btn lightbox-prev" aria-label="上一张">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </button>
+
+    <!-- 图片计数 -->
+    <span id="lightbox-counter" class="lightbox-counter"></span>
+
+    <!-- 下一张 -->
+    <button class="lightbox-btn lightbox-next" aria-label="下一张">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 18l6-6-6-6"/>
+      </svg>
+    </button>
+
+    <!-- 分隔线 -->
+    <div class="lightbox-divider"></div>
+
+    <!-- 缩小 -->
+    <button class="lightbox-btn" id="zoom-out" aria-label="缩小">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35M8 11h6"/>
+      </svg>
+    </button>
+
+    <!-- 缩放比例 -->
+    <span id="zoom-level" class="lightbox-zoom-level">100%</span>
+
+    <!-- 放大 -->
+    <button class="lightbox-btn" id="zoom-in" aria-label="放大">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35M11 8v6M8 11h6"/>
+      </svg>
+    </button>
+
+    <!-- 分隔线 -->
+    <div class="lightbox-divider"></div>
+
+    <!-- 下载 -->
+    <button class="lightbox-btn" id="lightbox-download" aria-label="下载图片">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<style is:global>
+  /* ===== 图片预览弹窗样式 ===== */
+  .lightbox-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.92);
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+
+  .lightbox-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* 顶部标题栏 */
+  .lightbox-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 1rem 4rem;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), transparent);
+    z-index: 10;
+  }
+
+  /* 右上角关闭按钮 */
+  .lightbox-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50%;
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+    z-index: 20;
+  }
+
+  .lightbox-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+  }
+
+  .lightbox-caption {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.95rem;
+    text-align: center;
+    max-width: 800px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+
+  /* 图片区域 */
+  .lightbox-image-area {
+    flex: 1;
+    padding: 4rem 2rem 5rem;
+    cursor: zoom-out;
+    overflow: auto;
+  }
+
+  /* 图片包装器，用于居中和滚动 */
+  .lightbox-image-wrapper {
+    /* 使用 min-width/min-height 确保包装器至少和容器一样大 */
+    min-width: 100%;
+    min-height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #lightbox-image {
+    max-width: 95vw;
+    max-height: calc(100vh - 10rem);
+    object-fit: contain;
+    border-radius: 4px;
+    transition: width 0.2s ease, height 0.2s ease;
+    pointer-events: none; /* 让点击穿透到父元素 */
+    flex-shrink: 0; /* 防止图片被压缩 */
+  }
+
+  /* 放大状态下移除最大尺寸限制 */
+  .lightbox-image-area.zoomed #lightbox-image {
+    max-width: none;
+    max-height: none;
+  }
+
+  /* 底部操作栏 */
+  .lightbox-toolbar {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(30, 30, 30, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    z-index: 10;
+  }
+
+  .lightbox-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .lightbox-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+
+  .lightbox-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .lightbox-btn:disabled:hover {
+    background: transparent;
+  }
+
+  .lightbox-counter {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.875rem;
+    min-width: 50px;
+    text-align: center;
+    padding: 0 0.25rem;
+  }
+
+  .lightbox-zoom-level {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.8rem;
+    min-width: 48px;
+    text-align: center;
+  }
+
+  .lightbox-divider {
+    width: 1px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.2);
+    margin: 0 0.375rem;
+  }
+
+  /* 可预览图片的鼠标样式 */
+  [data-lightbox-container] img,
+  .lightbox-enabled img {
+    cursor: zoom-in;
+    transition: transform 0.2s ease;
+  }
+
+  [data-lightbox-container] img:hover,
+  .lightbox-enabled img:hover {
+    transform: scale(1.02);
+  }
+</style>
+
+<script>
+  /**
+   * 图片预览弹窗功能
+   * 支持：点击预览、切换图片、缩放、键盘操作
+   */
+  
+  // 状态变量
+  let currentImageIndex = 0;
+  let allImages: HTMLImageElement[] = [];
+  let currentZoom = 1;
+  let isInitialized = false;
+  // 存储图片在 100% 缩放时的基础尺寸
+  let baseImageWidth = 0;
+  let baseImageHeight = 0;
+
+  /**
+   * 初始化图片预览功能
+   * @param containerSelector - 图片容器选择器，默认为 [data-lightbox-container]
+   */
+  function initImageLightbox(containerSelector: string = '[data-lightbox-container]') {
+    // 避免重复初始化
+    if (isInitialized) {
+      // 重新收集图片（页面可能有更新）
+      collectImages(containerSelector);
+      return;
+    }
+
+    collectImages(containerSelector);
+    bindLightboxEvents();
+    isInitialized = true;
+  }
+
+  /**
+   * 收集容器内的所有图片（使用事件委托，支持动态添加的图片）
+   */
+  function collectImages(containerSelector: string) {
+    const containers = document.querySelectorAll(containerSelector);
+    
+    containers.forEach(container => {
+      // 使用事件委托，避免图片被克隆后事件丢失
+      if (!container.hasAttribute('data-lightbox-delegated')) {
+        container.setAttribute('data-lightbox-delegated', 'true');
+        container.addEventListener('click', (e) => {
+          const target = e.target as HTMLElement;
+          // 检查点击的是否是图片
+          if (target.tagName === 'IMG') {
+            e.preventDefault();
+            // 重新收集当前容器内的所有图片
+            const imgs = Array.from(container.querySelectorAll('img')) as HTMLImageElement[];
+            allImages = imgs;
+            const index = imgs.indexOf(target as HTMLImageElement);
+            if (index !== -1) {
+              openLightbox(index);
+            }
+          }
+        });
+      }
+    });
+  }
+
+  /**
+   * 绑定弹窗事件
+   */
+  function bindLightboxEvents() {
+    const lightbox = document.getElementById('image-lightbox');
+    if (!lightbox) return;
+
+    const closeBtn = lightbox.querySelector('.lightbox-close');
+    const prevBtn = lightbox.querySelector('.lightbox-prev');
+    const nextBtn = lightbox.querySelector('.lightbox-next');
+    const zoomInBtn = document.getElementById('zoom-in');
+    const zoomOutBtn = document.getElementById('zoom-out');
+    const imageArea = lightbox.querySelector('.lightbox-image-area');
+
+    const downloadBtn = document.getElementById('lightbox-download');
+
+    closeBtn?.addEventListener('click', closeLightbox);
+    prevBtn?.addEventListener('click', () => navigateImage(-1));
+    nextBtn?.addEventListener('click', () => navigateImage(1));
+    zoomInBtn?.addEventListener('click', () => zoomImage(0.25));
+    zoomOutBtn?.addEventListener('click', () => zoomImage(-0.25));
+    downloadBtn?.addEventListener('click', downloadImage);
+
+    // 点击图片区域关闭
+    imageArea?.addEventListener('click', closeLightbox);
+
+    // 键盘事件
+    document.addEventListener('keydown', handleLightboxKeydown);
+  }
+
+  /**
+   * 打开弹窗
+   */
+  function openLightbox(index: number) {
+    currentImageIndex = index;
+    currentZoom = 1;
+    const lightbox = document.getElementById('image-lightbox');
+    lightbox?.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    updateLightboxImage();
+  }
+
+  /**
+   * 关闭弹窗
+   */
+  function closeLightbox() {
+    const lightbox = document.getElementById('image-lightbox');
+    const imageArea = document.querySelector('.lightbox-image-area') as HTMLElement;
+    lightbox?.classList.remove('active');
+    imageArea?.classList.remove('zoomed');
+    document.body.style.overflow = '';
+    currentZoom = 1;
+    baseImageWidth = 0;
+    baseImageHeight = 0;
+  }
+
+  /**
+   * 切换图片
+   */
+  function navigateImage(direction: number) {
+    currentImageIndex += direction;
+    if (currentImageIndex < 0) currentImageIndex = allImages.length - 1;
+    if (currentImageIndex >= allImages.length) currentImageIndex = 0;
+    currentZoom = 1;
+    updateLightboxImage();
+  }
+
+  /**
+   * 更新弹窗中的图片
+   */
+  function updateLightboxImage() {
+    const img = allImages[currentImageIndex];
+    const lightboxImg = document.getElementById('lightbox-image') as HTMLImageElement;
+    const imageArea = document.querySelector('.lightbox-image-area') as HTMLElement;
+    const caption = document.getElementById('lightbox-caption');
+    const counter = document.getElementById('lightbox-counter');
+    const zoomLevel = document.getElementById('zoom-level');
+    const prevBtn = document.querySelector('.lightbox-prev') as HTMLButtonElement;
+    const nextBtn = document.querySelector('.lightbox-next') as HTMLButtonElement;
+
+    if (lightboxImg && img) {
+      // 先重置样式，等待图片加载后再计算基础尺寸
+      lightboxImg.style.width = '';
+      lightboxImg.style.height = '';
+      lightboxImg.src = img.src;
+      lightboxImg.alt = img.alt;
+      
+      // 图片加载完成后记录基础尺寸
+      lightboxImg.onload = () => {
+        baseImageWidth = lightboxImg.offsetWidth;
+        baseImageHeight = lightboxImg.offsetHeight;
+        // 应用当前缩放
+        applyZoom();
+      };
+      
+      // 如果图片已缓存，onload 可能不触发，手动检查
+      if (lightboxImg.complete) {
+        baseImageWidth = lightboxImg.offsetWidth;
+        baseImageHeight = lightboxImg.offsetHeight;
+        applyZoom();
+      }
+    }
+
+    // 重置缩放状态
+    imageArea?.classList.remove('zoomed');
+
+    if (caption) {
+      caption.textContent = img?.alt || '';
+    }
+
+    if (counter) {
+      counter.textContent = `${currentImageIndex + 1}/${allImages.length}`;
+    }
+
+    if (zoomLevel) {
+      zoomLevel.textContent = `${Math.round(currentZoom * 100)}%`;
+    }
+
+    // 更新导航按钮状态
+    if (prevBtn) prevBtn.disabled = allImages.length <= 1;
+    if (nextBtn) nextBtn.disabled = allImages.length <= 1;
+  }
+
+  /**
+   * 应用缩放到图片
+   */
+  function applyZoom() {
+    const lightboxImg = document.getElementById('lightbox-image') as HTMLImageElement;
+    const imageArea = document.querySelector('.lightbox-image-area') as HTMLElement;
+    const zoomLevel = document.getElementById('zoom-level');
+
+    if (lightboxImg && baseImageWidth > 0 && baseImageHeight > 0) {
+      // 使用实际宽高来缩放，而不是 transform
+      const newWidth = baseImageWidth * currentZoom;
+      const newHeight = baseImageHeight * currentZoom;
+      
+      lightboxImg.style.width = `${newWidth}px`;
+      lightboxImg.style.height = `${newHeight}px`;
+      
+      // 当缩放大于 100% 时，添加 zoomed class 以启用滚动
+      if (currentZoom > 1) {
+        imageArea?.classList.add('zoomed');
+      } else {
+        imageArea?.classList.remove('zoomed');
+      }
+    }
+
+    if (zoomLevel) {
+      zoomLevel.textContent = `${Math.round(currentZoom * 100)}%`;
+    }
+  }
+
+  /**
+   * 缩放图片
+   * 最大放大倍数：500%
+   */
+  function zoomImage(delta: number) {
+    currentZoom = Math.max(0.5, Math.min(5, currentZoom + delta));
+    applyZoom();
+  }
+
+  /**
+   * 下载当前图片
+   */
+  function downloadImage() {
+    const img = allImages[currentImageIndex];
+    if (!img) return;
+
+    // 创建下载链接
+    const link = document.createElement('a');
+    link.href = img.src;
+    
+    // 从 URL 中提取文件名，或使用 alt 文本
+    const urlParts = img.src.split('/');
+    let filename = urlParts[urlParts.length - 1].split('?')[0];
+    if (!filename || filename === '') {
+      filename = img.alt || 'image';
+      // 添加扩展名
+      if (!filename.includes('.')) {
+        filename += '.png';
+      }
+    }
+    
+    link.download = filename;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  /**
+   * 键盘事件处理
+   */
+  function handleLightboxKeydown(e: KeyboardEvent) {
+    const lightbox = document.getElementById('image-lightbox');
+    if (!lightbox?.classList.contains('active')) return;
+
+    switch (e.key) {
+      case 'Escape':
+        closeLightbox();
+        break;
+      case 'ArrowLeft':
+        navigateImage(-1);
+        break;
+      case 'ArrowRight':
+        navigateImage(1);
+        break;
+      case '+':
+      case '=':
+        zoomImage(0.25);
+        break;
+      case '-':
+        zoomImage(-0.25);
+        break;
+    }
+  }
+
+  // 暴露全局 API，方便手动调用
+  (window as any).ImageLightbox = {
+    init: initImageLightbox,
+    open: openLightbox,
+    close: closeLightbox,
+  };
+
+  // 自动初始化
+  document.addEventListener('DOMContentLoaded', () => initImageLightbox());
+  document.addEventListener('astro:page-load', () => {
+    isInitialized = false; // 重置状态以便重新绑定
+    initImageLightbox();
+  });
+</script>

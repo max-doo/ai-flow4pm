@@ -1,0 +1,1119 @@
+---
+/**
+ * 教程文档布局模板
+ * 简约活泼风格，顶部 Banner（支持封面图）+ 右侧浮动目录 + 白色内容区域
+ */
+import BaseLayout from './BaseLayout.astro';
+import TutorialTOC from '../components/TutorialTOC.astro';
+import TagList from '../components/TagList.astro';
+import Breadcrumb from '../components/Breadcrumb.astro';
+import ImageLightbox from '../components/ImageLightbox.astro';
+
+interface Props {
+  frontmatter: {
+    title: string;
+    description?: string;
+    date: Date;
+    updatedDate?: Date;
+    tags?: string[];
+    toc?: boolean;
+    cover?: string;
+    author?: string;
+    difficulty?: 'beginner' | 'intermediate' | 'advanced';
+    readingTime?: number;
+    series?: string;
+    order?: number;
+    template?: string;
+  };
+  headings: { depth: number; slug: string; text: string }[];
+}
+
+const { frontmatter, headings } = Astro.props;
+const { 
+  title, 
+  description, 
+  date, 
+  tags = [], 
+  toc = true, 
+  cover, 
+  author = '匿名',
+  series,
+  template = 'tutorial',
+} = frontmatter;
+
+// 确保 baseUrl 以斜杠结尾
+const rawBaseUrl = import.meta.env.BASE_URL;
+const baseUrl = rawBaseUrl.endsWith('/') ? rawBaseUrl : `${rawBaseUrl}/`;
+
+// 默认封面图（需要加上 baseUrl 前缀）
+const defaultCover = `${baseUrl}img/default.jpg`;
+
+// Banner 封面图：优先使用 frontmatter.cover，自定义封面；否则使用默认图片
+// 如果 cover 以 / 开头，需要加上 baseUrl 前缀
+const bannerImageSrc = cover 
+  ? (cover.startsWith('/') ? `${baseUrl.slice(0, -1)}${cover}` : cover)
+  : defaultCover;
+
+// 格式化日期
+const formatDate = (d: Date) => {
+  return new Date(d).toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+
+// 从 URL 路径中提取当前页面的 slug
+const pathname = Astro.url.pathname;
+const currentSlug = pathname.split('/posts/')[1]?.replace(/\/$/, '') || '';
+
+// 面包屑导航
+const breadcrumbItems = [
+  { label: '首页', href: baseUrl },
+  { label: '文章', href: `${baseUrl}posts/` },
+  { label: title }, // 当前页面标题（无链接）
+];
+---
+
+<BaseLayout title={title} description={description} ogImage={cover}>
+  <!-- 顶部 Banner 区域（增大高度） -->
+  <div class="relative w-full min-h-[360px] md:min-h-[360px] flex items-center justify-center overflow-hidden">
+    <!-- Banner 背景图（支持自定义封面，默认为 default.jpg） -->
+    <img id="banner-img" src={bannerImageSrc} alt={title} class="absolute inset-0 w-full h-full object-cover scale-[1.02]" loading="lazy" crossorigin="anonymous" />
+    
+    <!-- Banner 内容：标题和描述（默认白色文字，脚本会根据图片亮度动态切换） -->
+    <div id="banner-content" class="relative z-10 text-center py-8 px-4 max-w-[1400px] mb-10 banner-text-light">
+      <h1 class="banner-title text-4xl md:text-5xl font-bold mb-3 leading-tight">{title}</h1>
+      {description && (
+        <p class="banner-desc text-xl leading-relaxed">{description}</p>
+      )}
+    </div>
+            </div>
+
+  <!-- 顶部悬浮导航栏（面包屑 + 标题，使用 Tailwind 实现样式与动效） -->
+  <div
+    id="tutorial-top-nav"
+    class="fixed top-0 left-0 right-0 z-40 pointer-events-none -translate-y-full opacity-0 transition-all duration-200 ease-out"
+  >
+    <div class="max-w-[1400px] mx-auto mt-2 p-4">
+      <div
+        class=" pointer-events-auto gap-4 px-6 py-4 rounded-full bg-white/95 shadow-[0_10px_30px_rgba(0,0,0,0.08)]"
+      >
+        <div class="flex items-center gap-3 text-[var(--color-text-muted)]">
+          <Breadcrumb items={breadcrumbItems} currentSlug={currentSlug} currentTitle={title} />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主体内容区域 -->
+  <div class="relative mx-auto px-4">
+    <!-- 右侧浮动目录 -->
+    {toc && headings.length > 0 && (
+      <aside class="tutorial-toc-sidebar">
+        <TutorialTOC headings={headings} />
+      </aside>
+          )}
+          
+    <!-- 白色内容卡片（上下圆角） -->
+    <div class="bg-white rounded-3xl -mt-[120px] relative z-20  max-w-[1400px] mx-auto shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+      <!-- 面包屑导航（用于控制顶部悬浮导航的出现时机） -->
+      <div id="tutorial-breadcrumb" class="px-8 pt-6">
+        <Breadcrumb items={breadcrumbItems} currentSlug={currentSlug} currentTitle={title} />
+      </div>
+
+      <article class="px-8 pb-12 md:px-12 md:pb-16">
+          <!-- 元信息（水平整体居中） -->
+         <div class="relative mt-6 mb-12">
+           <div class="flex flex-col items-center">
+            <!-- 第一行：时间、类型、系列、作者 -->
+            <div class="flex flex-wrap justify-center gap-6 items-center text-base text-[var(--color-text-secondary)]">
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-[var(--color-text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span>{formatDate(date)}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-[var(--color-text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+                <span>教程</span>
+              </div>
+              {series && (
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4 text-[var(--color-text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                  <span>{series}</span>
+                </div>
+              )}
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-[var(--color-text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span>{author}</span>
+              </div>
+            </div>
+            <!-- 第二行：标签 -->
+            {tags.length > 0 && (
+              <div class="pt-4 w-full flex justify-center">
+                <TagList tags={tags} />
+                </div>
+              )}
+            </div>
+          </div>
+
+        <!-- 文章正文 -->
+        <div class="prose prose-base max-w-none tutorial-content" data-lightbox-container data-base-url={baseUrl}>
+          <slot />
+        </div>
+      </article>
+    </div>
+
+    <!-- 底部导航（与内容卡片同级） -->
+    <footer class="mt-10 pb-10 max-w-[1400px] mx-auto flex justify-start">
+      <a 
+        href={`${baseUrl}posts`} 
+        class="footer-back-link text-lg inline-flex items-center gap-2 px-5 "
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <!-- 向左箭头 -->
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7 7-7M3 12h18" />
+        </svg>
+        返回文章列表
+      </a>
+    </footer>
+  </div>
+</BaseLayout>
+
+<!-- 图片预览弹窗组件 -->
+<ImageLightbox />
+
+<style>
+  /* ===== 无法用 Tailwind 替换的样式 ===== */
+
+  /* Banner 文字颜色（根据图片亮度动态切换） */
+  .banner-text-dark .banner-title {
+    color: var(--color-text);
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
+  }
+  .banner-text-dark .banner-desc {
+    color: var(--color-text);
+  }
+
+  .banner-text-light .banner-title {
+    color: white;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  }
+  .banner-text-light .banner-desc {
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  /* 右侧浮动目录（固定定位 + 垂直居中） */
+  .tutorial-toc-sidebar {
+    display: none;
+  }
+
+  @media (min-width: 1280px) {
+    .tutorial-toc-sidebar {
+      display: block;
+      position: fixed;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 240px;
+      z-index: 50;
+    }
+  }
+
+  /* ===== 文章内容伪元素样式 ===== */
+  .tutorial-content :global(h2) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 2px dashed var(--color-border); /* 使用虚线样式 */
+  }
+
+  .tutorial-content :global(h3) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    /* 仅文字部分的蓝色下划线（使用 text-decoration 控制） */
+    text-decoration-line: underline;
+    text-decoration-color: var(--color-blue);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+  }
+
+  /* 标题下面的正文内容比标题再多缩进一些 */
+  /* 注意：blockquote 不参与此规则，因为它通常紧跟在 h2 后面作为目标说明 */
+  .tutorial-content :global(h3 ~ p),
+  .tutorial-content :global(h3 ~ ol),
+  .tutorial-content :global(h3 ~ ul),
+  .tutorial-content :global(h3 ~ pre),
+  .tutorial-content :global(h3 ~ table) {
+    margin-left: 1.5rem;
+  }
+  
+  /* h2 后面紧跟的 blockquote 使用 :has() 重置缩进 */
+  .tutorial-content :global(h2 + blockquote) {
+    margin-left: 0;
+  }
+
+  /* 移除行内代码的引号（覆盖 Tailwind Typography 默认样式） */
+  .tutorial-content :global(:not(pre) > code::before),
+  .tutorial-content :global(:not(pre) > code::after) {
+    content: '' !important;
+  }
+ 
+  /* 步骤列表（CSS 计数器 + 蓝色圆形编号 + 时间线虚线） */
+  .tutorial-content :global(ol) {
+    counter-reset: step-counter;
+    list-style: none;
+    padding-left: 0;
+  }
+  
+  .tutorial-content :global(ol > li) {
+    counter-increment: step-counter;
+    position: relative;
+    padding-left: 2.5rem;
+
+  }
+  
+  /* 圆形序号 */
+  .tutorial-content :global(ol > li::before) {
+    content: counter(step-counter);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 2rem;
+    height: 2rem;
+    background: var(--color-blue);
+    color: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 600;
+    z-index: 1; /* 确保圆形在虚线上方 */
+  }
+
+  /* 时间线虚线（连接圆形序号） */
+  .tutorial-content :global(ol > li::after) {
+    content: '';
+    position: absolute;
+    left: calc(1rem - 1px); /* 圆形中心位置 (2rem / 2 - 1px) */
+    top: 2rem; /* 从圆形底部开始 */
+    width: 2px;
+    height: calc(100% - 1rem); /* 延伸到下一个圆形顶部附近 */
+    background: repeating-linear-gradient(
+      to bottom,
+      var(--color-blue) 0,
+      var(--color-blue) 4px,
+      transparent 4px,
+      transparent 8px
+    );
+  }
+
+  /* 最后一个列表项不显示虚线 */
+  .tutorial-content :global(ol > li:last-child::after) {
+    display: none;
+  }
+
+  /* 子级有序列表：使用小写罗马数字，蓝色文字，无背景填充 */
+  .tutorial-content :global(ol ol) {
+    counter-reset: none;
+    list-style-type: lower-roman;
+    padding-left: 1.5rem;
+  }
+
+  .tutorial-content :global(ol ol > li) {
+    padding-left: 0;
+    position: static;
+    counter-increment: none; /* 子级列表不增加计数器 */
+  }
+
+  .tutorial-content :global(ol ol > li::before) {
+    content: none;
+  }
+
+  /* 子级有序列表的序号颜色为蓝色，仅作用于 marker 本身 */
+  .tutorial-content :global(ol ol > li::marker) {
+    color: var(--color-blue);
+    font-weight: 500;
+  }
+
+  /* 无序列表项目符号为蓝色且更大 */
+  .tutorial-content :global(ul > li::marker) {
+    color: var(--color-blue);
+    font-size: 1.2em;
+  }
+
+  /* 子级无序列表项目符号为空心圆点 */
+  .tutorial-content :global(ul ul) {
+    list-style-type: circle;
+  }
+
+  .tutorial-content :global(ul ul > li::marker) {
+    color: var(--color-blue);
+  }
+
+  /* 无序列表整体与前一段落的间距更小一些 */
+  .tutorial-content :global(ul) {
+    margin-top: 0.25rem;
+  }
+
+  /* 列表项中的段落行间距更紧凑一些 */
+  .tutorial-content :global(li > p) {
+    margin-bottom: 0.2rem;
+    margin-top:0.2rem;
+  }
+
+  /* 无序列表行间距 */
+  .tutorial-content :global(ul > li) {
+  }
+
+  /* 底部返回按钮：悬浮时变橙色并略微放大（文字 + 图标一起放大） */
+  .footer-back-link {
+    color: var(--color-text-secondary);
+    transition: color 0.2s ease, transform 0.2s ease;
+    transform-origin: left center;
+  }
+
+  .footer-back-link:hover {
+    color: var(--color-orange);
+    transform: scale(1.05);
+  }
+
+  /* ===== 引用块样式（Notion Callout 风格） ===== */
+  .tutorial-content :global(blockquote) {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    margin-top: -1rem;
+    background: linear-gradient(135deg, rgba(245, 130, 32, 0.08) 0%, rgba(245, 130, 32, 0.04) 100%);
+    border: 1px solid rgba(245, 130, 32, 0.2);
+    border-radius: 12px;
+    border-left: none; /* 去掉默认左边框 */
+    font-style: normal; /* 去掉斜体 */
+    quotes: none;
+  }
+
+  /* Callout 图标（使用 ::before 伪元素） */
+  .tutorial-content :global(blockquote::before) {
+    content: '📌';
+    font-size: 1rem;
+    line-height: 1.5;
+    flex-shrink: 0;
+  }
+
+  /* Callout 内容样式 */
+  .tutorial-content :global(blockquote p) {
+    margin: 0;
+    color: var(--color-text);
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  /* Callout 内加粗文字为橙色 */
+  .tutorial-content :global(blockquote strong) {
+    color: var(--color-orange);
+  }
+  
+
+  /* ===== 图片样式 ===== */
+  /* 单张图片：居中显示，最大高度 1000px，无投影 */
+  .tutorial-content :global(img) {
+    display: block;
+    max-height: 1000px;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    margin-left: auto;
+    margin-right: auto;
+    object-fit: contain;
+    box-shadow: none; /* 删除图片投影 */
+  }
+
+  /* 图片容器（figure）样式 */
+  .tutorial-content :global(figure.image-figure) {
+    margin: 1.5rem auto;
+    text-align: center;
+  }
+
+  /* 图片注释样式（figcaption，来自 alt 文本） */
+  .tutorial-content :global(figcaption.image-caption) {
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    font-style: italic;
+    margin-top: 0.5rem;
+    line-height: 1.5;
+  }
+
+  /* 连续图片容器：自动多列布局（最多 3 列） */
+  .tutorial-content :global(.image-group) {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(max(280px, calc((100% - 2rem) / 3)), 1fr));
+    gap: 1.5rem;
+    margin: 1.5rem 0;
+    max-width: 100%;
+  }
+
+  /* 图片组内的 figure 样式 */
+  .tutorial-content :global(.image-group figure.image-figure) {
+    margin: 0;
+  }
+
+  /* 图片组内的图片样式 */
+  .tutorial-content :global(.image-group img) {
+    width: 100%;
+    height: auto;
+    max-height: 1000px;
+    object-fit: contain;
+    margin: 0;
+  }
+
+  /* ===== 代码块样式 ===== */
+  /* 代码块包装容器（由 JS 创建） */
+  .tutorial-content :global(.code-block-wrapper) {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    margin: 1rem 0;
+  }
+
+  .tutorial-content :global(pre) {
+    position: relative;
+    max-height: 600px; /* 800px - 60px 头部高度 */
+    overflow-y: auto;
+    overflow-x: auto;
+    margin: 0 !important;
+    border-radius: 0 0 16px 16px !important;
+  }
+
+  /* 代码块头部（语言标签 + 复制按钮） */
+  .tutorial-content :global(.code-header) {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: rgba(22, 27, 34, 0.95);
+    height: 2.5rem;
+    box-sizing: border-box;
+    z-index: 10;
+    border-radius: 16px 16px 0 0;
+  }
+
+  /* 代码内容区域 */
+  .tutorial-content :global(pre code) {
+    display: block;
+  }
+
+  .tutorial-content :global(.code-language) {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .tutorial-content :global(.code-copy-btn) {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.5rem;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .tutorial-content :global(.code-copy-btn:hover) {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.4);
+    color: white;
+  }
+
+  .tutorial-content :global(.code-copy-btn.copied) {
+    background: var(--color-green);
+    border-color: var(--color-green);
+    color: white;
+  }
+
+  .tutorial-content :global(.code-copy-btn svg) {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* ===== 特定“使用教程”胶囊按钮链接样式 ===== */
+  .tutorial-content :global(a.tutorial-pill-link) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.9rem;
+    border-radius: 999px;
+    background-color: rgba(0, 119, 255, 0.08);
+    color: var(--color-blue);
+    font-weight: 500;
+    text-decoration: none;
+    border: 1px solid rgba(0, 119, 255, 0.4);
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .tutorial-content :global(a.tutorial-pill-link::after) {
+    content: '→';
+    font-size: 1rem;
+    display: inline-block;
+    transform: translateY(1px);
+  }
+
+  .tutorial-content :global(a.tutorial-pill-link:hover) {
+    background-color: rgba(0, 119, 255, 0.16);
+  }
+
+  .tutorial-content :global(a.tutorial-pill-link:active) {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 119, 255, 0.2);
+  }
+
+  /* ===== 视频嵌入样式（iframe / video） ===== */
+  /* 宽屏视频容器：响应式 16:9 比例，占满正文宽度 */
+  .tutorial-content :global(.video-container) {
+    position: relative;
+    width: 100%;
+    max-width: 1000px; /* 更宽的显示区域 */
+    margin: 1.5rem auto;
+    padding-bottom: 56.25%; /* 16:9 比例 */
+    height: 0;
+    overflow: hidden;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    background: #000;
+  }
+
+  .tutorial-content :global(.video-container iframe),
+  .tutorial-content :global(.video-container video) {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 16px;
+  }
+
+  /* 竖版视频容器（抖音等短视频平台） */
+  .tutorial-content :global(.video-container-vertical) {
+    display: flex;
+    justify-content: center;
+    margin: 1.5rem auto;
+  }
+
+  .tutorial-content :global(.video-container-vertical iframe) {
+    width: 360px;
+    height: 640px; /* 抖音播放器推荐尺寸 */
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  }
+
+  /* 移动端响应式 */
+  @media (max-width: 480px) {
+    .tutorial-content :global(.video-container-vertical iframe) {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 9 / 16;
+    }
+  }
+
+</style>
+
+<script>
+  /**
+   * 分析 Banner 图片亮度，自动选择文字颜色
+   * 亮度高 -> 深色文字（banner-text-dark）
+   * 亮度低 -> 白色文字（banner-text-light）
+   */
+  function analyzeBannerBrightness() {
+    const img = document.getElementById('banner-img') as HTMLImageElement;
+    const content = document.getElementById('banner-content');
+    
+    if (!img || !content) return;
+
+    // 图片加载完成后分析
+    const analyze = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // 采样区域：图片中心区域（标题所在位置）
+        const sampleWidth = Math.min(img.naturalWidth, 400);
+        const sampleHeight = Math.min(img.naturalHeight, 200);
+        canvas.width = sampleWidth;
+        canvas.height = sampleHeight;
+
+        // 绘制图片中心区域
+        const sx = (img.naturalWidth - sampleWidth) / 2;
+        const sy = (img.naturalHeight - sampleHeight) / 2;
+        ctx.drawImage(img, sx, sy, sampleWidth, sampleHeight, 0, 0, sampleWidth, sampleHeight);
+
+        // 获取像素数据
+        const imageData = ctx.getImageData(0, 0, sampleWidth, sampleHeight);
+        const pixels = imageData.data;
+
+        // 计算平均亮度（感知亮度公式）
+        let totalBrightness = 0;
+        const pixelCount = pixels.length / 4;
+
+        for (let i = 0; i < pixels.length; i += 4) {
+          const r = pixels[i];
+          const g = pixels[i + 1];
+          const b = pixels[i + 2];
+          // 感知亮度公式
+          const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+          totalBrightness += brightness;
+        }
+
+        const avgBrightness = totalBrightness / pixelCount;
+
+        // 亮度阈值：128（0-255 的中间值）
+        // 亮度 > 128 -> 图片偏亮 -> 使用深色文字
+        // 亮度 <= 128 -> 图片偏暗 -> 使用白色文字（默认）
+        if (avgBrightness > 128) {
+          content.classList.remove('banner-text-light');
+          content.classList.add('banner-text-dark');
+        } else {
+          content.classList.remove('banner-text-dark');
+          content.classList.add('banner-text-light');
+        }
+      } catch (e) {
+        // 跨域图片无法分析，保持默认白色文字
+        console.warn('无法分析图片亮度，保持默认白色文字');
+      }
+    };
+
+    if (img.complete) {
+      analyze();
+    } else {
+      img.addEventListener('load', analyze);
+    }
+  }
+
+  // 页面加载完成后执行
+  document.addEventListener('DOMContentLoaded', analyzeBannerBrightness);
+  // Astro 页面切换时也执行
+  document.addEventListener('astro:page-load', analyzeBannerBrightness);
+
+  /**
+   * 将图片包裹成 <figure>，并用 alt 文本生成 <figcaption> 注释
+   * 支持多种图片结构：
+   * - <p><img></p> (标准 Markdown)
+   * - <p><img><img></p> (连续图片在同一个 p 内)
+   * - 直接的 <img> (Astro 图片组件)
+   */
+  function wrapImagesWithFigure() {
+    const content = document.querySelector('.tutorial-content');
+    if (!content) return;
+
+    // 处理方式1：<p> 内只有一张图片
+    content.querySelectorAll('p > img:only-child').forEach(img => {
+      const p = img.parentElement;
+      if (!p || p.closest('.image-figure, .image-group')) return;
+      
+      const figure = createFigure(img as HTMLImageElement);
+      p.parentNode?.replaceChild(figure, p);
+    });
+
+    // 处理方式2：<p> 内有多张连续图片（Astro 可能会把连续图片放在同一个 p 内）
+    content.querySelectorAll('p').forEach(p => {
+      if (p.closest('.image-figure, .image-group')) return;
+      
+      const children = Array.from(p.childNodes);
+      const imgs = Array.from(p.querySelectorAll('img'));
+      
+      // 检查是否只包含图片（和可能的空白文本节点）
+      const nonEmptyChildren = children.filter(node => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          return node.textContent?.trim() !== '';
+        }
+        return true;
+      });
+      
+      if (imgs.length >= 2 && nonEmptyChildren.length === imgs.length) {
+        // 多张图片，创建图片组
+        const wrapper = document.createElement('div');
+        wrapper.className = 'image-group';
+        
+        imgs.forEach(img => {
+          const figure = createFigure(img as HTMLImageElement);
+          wrapper.appendChild(figure);
+        });
+        
+        p.parentNode?.replaceChild(wrapper, p);
+      }
+    });
+  }
+
+  /**
+   * 创建 figure 元素
+   */
+  function createFigure(img: HTMLImageElement): HTMLElement {
+    const figure = document.createElement('figure');
+    figure.className = 'image-figure';
+    
+    // 克隆图片到 figure
+    figure.appendChild(img.cloneNode(true));
+    
+    // 如果有 alt 文本，创建 figcaption
+    const altText = img.getAttribute('alt');
+    if (altText && altText.trim()) {
+      const caption = document.createElement('figcaption');
+      caption.className = 'image-caption';
+      caption.textContent = altText;
+      figure.appendChild(caption);
+    }
+    
+    return figure;
+  }
+
+  /**
+   * 自动识别连续图片并包裹成图片组（最多 3 列）
+   * 规则：
+   * - 连续的 <figure.image-figure> 元素会被合并成一个 .image-group
+   * - 中间有其他元素则打断分组
+   * - 单张图片保持原样（居中显示）
+   */
+  function groupConsecutiveImages() {
+    const content = document.querySelector('.tutorial-content');
+    if (!content) return;
+
+    // 获取所有直接子元素
+    let children = Array.from(content.children);
+    let i = 0;
+
+    while (i < children.length) {
+      const current = children[i];
+      
+      // 检查是否是图片 figure（且不在 image-group 内）
+      if (isImageFigure(current) && !current.closest('.image-group')) {
+        // 收集连续的图片 figure（最多 3 张）
+        const imageGroup: Element[] = [current];
+        let j = i + 1;
+        
+        while (j < children.length && imageGroup.length < 3) {
+          const next = children[j];
+          if (isImageFigure(next)) {
+            imageGroup.push(next);
+            j++;
+          } else {
+            break;
+          }
+        }
+
+        // 如果有 2 张或以上连续图片，创建图片组
+        if (imageGroup.length >= 2) {
+          const wrapper = document.createElement('div');
+          wrapper.className = 'image-group';
+          
+          // 在第一个图片前插入 wrapper
+          current.parentNode?.insertBefore(wrapper, current);
+          
+          // 将所有 figure 移入 wrapper
+          imageGroup.forEach(figure => {
+            wrapper.appendChild(figure);
+          });
+
+          // 更新 children 数组和索引
+          children = Array.from(content.children);
+          i = children.indexOf(wrapper) + 1;
+        } else {
+          i++;
+        }
+      } else {
+        i++;
+      }
+    }
+  }
+
+  /**
+   * 判断元素是否是图片 figure
+   */
+  function isImageFigure(el: Element): boolean {
+    return el.tagName === 'FIGURE' && el.classList.contains('image-figure');
+  }
+
+  /**
+   * 初始化图片处理：先包裹 figure，再分组
+   */
+  function initImageProcessing() {
+    wrapImagesWithFigure();
+    groupConsecutiveImages();
+  }
+
+  document.addEventListener('DOMContentLoaded', initImageProcessing);
+  document.addEventListener('astro:page-load', initImageProcessing);
+
+  /**
+   * 当页面滚动到面包屑离开视口时，显示顶部悬浮导航栏
+   */
+  function setupFloatingTopNav() {
+    const breadcrumb = document.getElementById('tutorial-breadcrumb');
+    const topNav = document.getElementById('tutorial-top-nav');
+
+    if (!breadcrumb || !topNav) return;
+
+    const showClasses = ['translate-y-0', 'opacity-100'];
+    const hideClasses = ['-translate-y-full', 'opacity-0'];
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          // 当面包屑完全离开视口时显示顶部导航
+          if (entry.isIntersecting) {
+            topNav.classList.remove(...showClasses);
+            hideClasses.forEach((c) => topNav.classList.add(c));
+          } else {
+            topNav.classList.remove(...hideClasses);
+            showClasses.forEach((c) => topNav.classList.add(c));
+          }
+        });
+      },
+      {
+        root: null,
+        threshold: 0,
+      }
+    );
+
+    observer.observe(breadcrumb);
+  }
+
+  document.addEventListener('DOMContentLoaded', setupFloatingTopNav);
+  document.addEventListener('astro:page-load', setupFloatingTopNav);
+
+  /**
+   * ===== 代码块复制功能 =====
+   */
+  function initCodeBlockCopy() {
+    const content = document.querySelector('.tutorial-content');
+    if (!content) return;
+
+    const codeBlocks = content.querySelectorAll('pre');
+    
+    codeBlocks.forEach(pre => {
+      // 避免重复添加（检查是否已经被包装）
+      if (pre.parentElement?.classList.contains('code-block-wrapper')) return;
+
+      // 获取代码语言：优先从 class / data-language 中提取，而不是用固定的 "code"
+      const code = pre.querySelector('code');
+      let language = 'code';
+
+      // 1) 从 <code> 的 class 提取（language-xxx）
+      if (code) {
+        const codeClasses = Array.from(code.classList);
+        const langClass = codeClasses.find((c) => c.startsWith('language-'));
+        if (langClass) {
+          language = langClass.replace('language-', '');
+        }
+      }
+
+      // 2) 如果还没拿到，再从 <pre> 或 <code> 的 data-language 提取（Astro/Shiki 可能会加这个）
+      if (language === 'code') {
+        const dataLang = (code?.getAttribute('data-language') || pre.getAttribute('data-language')) ?? '';
+        if (dataLang) {
+          language = dataLang;
+        }
+      }
+
+      // 3) 兜底：把语言名转成大写，便于在头部展示（例如 json -> JSON）
+      const languageLabel = language ? language.toUpperCase() : 'CODE';
+
+      // 创建包装容器
+      const wrapper = document.createElement('div');
+      wrapper.className = 'code-block-wrapper';
+
+      // 创建头部
+      const header = document.createElement('div');
+      header.className = 'code-header';
+      header.innerHTML = `
+        <span class="code-language">${languageLabel}</span>
+        <button class="code-copy-btn" aria-label="复制代码">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+          </svg>
+          <span>复制</span>
+        </button>
+      `;
+
+      // 用 wrapper 包装 pre，并把 header 放在 pre 前面
+      pre.parentNode?.insertBefore(wrapper, pre);
+      wrapper.appendChild(header);
+      wrapper.appendChild(pre);
+
+      // 绑定复制事件
+      const copyBtn = header.querySelector('.code-copy-btn');
+      copyBtn?.addEventListener('click', async () => {
+        const codeText = code?.textContent || '';
+        
+        try {
+          await navigator.clipboard.writeText(codeText);
+          
+          // 显示复制成功状态
+          copyBtn.classList.add('copied');
+          const btnText = copyBtn.querySelector('span');
+          if (btnText) btnText.textContent = '已复制';
+          
+          // 更新图标为勾选
+          const svg = copyBtn.querySelector('svg');
+          if (svg) {
+            svg.innerHTML = '<path d="M20 6L9 17l-5-5"/>';
+          }
+          
+          // 2秒后恢复
+          setTimeout(() => {
+            copyBtn.classList.remove('copied');
+            if (btnText) btnText.textContent = '复制';
+            if (svg) {
+              svg.innerHTML = '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>';
+            }
+          }, 2000);
+        } catch (err) {
+          console.error('复制失败:', err);
+        }
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', initCodeBlockCopy);
+  document.addEventListener('astro:page-load', initCodeBlockCopy);
+
+  /**
+   * ===== 修复 Markdown 图片路径（添加 BASE_URL 前缀） =====
+   * Astro 默认不会自动给 Markdown 中的图片路径加 BASE_URL
+   * 需要在客户端动态修复
+   */
+  function fixImagePaths() {
+    const content = document.querySelector('.tutorial-content');
+    if (!content) return;
+
+    // 从 data 属性获取 BASE_URL
+    const baseUrl = content.getAttribute('data-base-url') || '/';
+
+    // 修复所有图片路径
+    content.querySelectorAll('img').forEach(img => {
+      const src = img.getAttribute('src');
+      if (!src) return;
+
+      // 跳过外链图片
+      if (/^https?:\/\//.test(src)) return;
+
+      // 跳过已经包含 BASE_URL 的路径（避免重复修复）
+      if (baseUrl !== '/' && src.startsWith(baseUrl)) return;
+
+      // 跳过 data: 和 blob: URL
+      if (/^(data|blob):/.test(src)) return;
+
+      // 如果是以 / 开头的绝对路径，添加 BASE_URL 前缀
+      if (src.startsWith('/')) {
+        const newSrc = baseUrl === '/' ? src : `${baseUrl}${src.slice(1)}`;
+        img.setAttribute('src', newSrc);
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', fixImagePaths);
+  document.addEventListener('astro:page-load', fixImagePaths);
+
+  /**
+   * ===== 修复 Markdown 内部链接路径（添加 BASE_URL 前缀） =====
+   * Astro 默认不会自动给 Markdown 中的内部链接加 BASE_URL
+   * 需要在客户端动态修复
+   */
+  function fixInternalLinks() {
+    const content = document.querySelector('.tutorial-content');
+    if (!content) return;
+
+    // 从 data 属性获取 BASE_URL
+    const baseUrl = content.getAttribute('data-base-url') || '/';
+
+    // 如果 BASE_URL 是 /，不需要修复
+    if (baseUrl === '/') return;
+
+    // 修复所有内部链接
+    content.querySelectorAll('a').forEach(link => {
+      const href = link.getAttribute('href');
+      if (!href) return;
+
+      // 跳过外链
+      if (/^https?:\/\//.test(href)) return;
+
+      // 跳过锚点链接
+      if (href.startsWith('#')) return;
+
+      // 跳过 mailto: 和 tel: 链接
+      if (/^(mailto|tel):/.test(href)) return;
+
+      // 跳过已经包含 BASE_URL 的路径
+      if (href.startsWith(baseUrl)) return;
+
+      // 如果是以 / 开头的绝对路径，添加 BASE_URL 前缀
+      if (href.startsWith('/')) {
+        const newHref = `${baseUrl}${href.slice(1)}`;
+        link.setAttribute('href', newHref);
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', fixInternalLinks);
+  document.addEventListener('astro:page-load', fixInternalLinks);
+
+  /**
+   * ===== 将外链和特定内链渲染为胶囊按钮 =====
+   * 目标：
+   * 1. 所有 https:// 或 http:// 开头的外部链接（新标签页打开）
+   * 2. 特定内部链接（如教程跳转链接）
+   */
+  function enhanceSpecialLinks() {
+    const content = document.querySelector('.tutorial-content');
+    if (!content) return;
+
+    // 匹配所有外链（http:// 或 https:// 开头）
+    const externalLinks = content.querySelectorAll<HTMLAnchorElement>('a[href^="http://"], a[href^="https://"]');
+
+    externalLinks.forEach((link) => {
+      if (link.classList.contains('tutorial-pill-link')) return;
+      link.classList.add('tutorial-pill-link');
+      // 外链在新标签页打开
+      link.setAttribute('target', '_blank');
+      link.setAttribute('rel', 'noopener noreferrer');
+    });
+
+    // 匹配所有内部文章链接（/posts/ 开头的链接）
+    const internalPillLinks = content.querySelectorAll<HTMLAnchorElement>(
+      'a[href*="/posts/"]'
+    );
+
+    internalPillLinks.forEach((link) => {
+      if (link.classList.contains('tutorial-pill-link')) return;
+      // 跳过外部链接（已在上面处理）
+      const href = link.getAttribute('href') || '';
+      if (href.startsWith('http://') || href.startsWith('https://')) return;
+      
+      link.classList.add('tutorial-pill-link');
+      // 内链不设置 target="_blank"，保持当前页面跳转
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', enhanceSpecialLinks);
+  document.addEventListener('astro:page-load', enhanceSpecialLinks);
+</script>

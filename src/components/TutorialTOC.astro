@@ -1,0 +1,285 @@
+---
+/**
+ * 教程专用目录导航组件（Table of Contents）
+ * 透明背景，只展示 h2 标题，当滚动到某个 h2 区域时自动展开其下属 h3 标题
+ */
+interface Props {
+  headings: { depth: number; slug: string; text: string }[];
+}
+
+const { headings } = Astro.props;
+
+// 构建层级结构：h2 为父级，h3 为子级
+interface TocItem {
+  depth: number;
+  slug: string;
+  text: string;
+  children: { depth: number; slug: string; text: string }[];
+}
+
+const tocStructure: TocItem[] = [];
+let currentH2: TocItem | null = null;
+
+headings.forEach(h => {
+  if (h.depth === 2) {
+    currentH2 = { ...h, children: [] };
+    tocStructure.push(currentH2);
+  } else if (h.depth === 3 && currentH2) {
+    currentH2.children.push(h);
+  }
+});
+---
+
+{tocStructure.length > 0 && (
+  <nav class="tutorial-toc" aria-label="目录导航">
+    <ul class="toc-list">
+      {tocStructure.map((h2) => (
+        <li class="toc-h2-item" data-h2-slug={h2.slug}>
+          <a 
+            href={`#${h2.slug}`}
+            class="toc-h2-link"
+            data-heading={h2.slug}
+          >
+            {h2.text}
+          </a>
+          {h2.children.length > 0 && (
+            <ul class="toc-h3-list" data-parent={h2.slug}>
+              {h2.children.map((h3) => (
+                <li class="toc-h3-item">
+                  <a 
+                    href={`#${h3.slug}`}
+                    class="toc-h3-link"
+                    data-heading={h3.slug}
+                  >
+                    {h3.text}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </li>
+      ))}
+    </ul>
+  </nav>
+)}
+
+<style>
+  .tutorial-toc {
+    /* 右侧浮动目录容器：透明毛玻璃效果 */
+    background: rgba(255, 255, 255, 0.01);
+    border-radius: 1rem;
+    padding: 0.85rem 1.1rem;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .toc-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--color-text-muted);
+  }
+
+  .toc-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .toc-title {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .toc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .toc-h2-item {
+    margin-bottom: 0.25rem;
+  }
+
+  .toc-h2-link {
+    display: block;
+    padding: 0.375rem 0;
+    font-size: 1rem;
+    color: var(--color-text-secondary);
+    transition: color 0.2s ease;
+    line-height: 1.4;
+  }
+
+  .toc-h2-link:hover {
+    color: var(--color-text);
+  }
+
+  .toc-h2-link.active {
+    color: var(--color-blue);
+    font-weight: 500;
+  }
+
+  /* h3 列表默认隐藏 */
+  .toc-h3-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+    opacity: 0;
+  }
+
+  /* 当父级 h2 激活时展开 h3 列表 */
+  .toc-h3-list.expanded {
+    max-height: 500px;
+    opacity: 1;
+  }
+
+  .toc-h3-item {
+    margin-left: 0.75rem;
+    position: relative;
+  }
+
+  .toc-h3-item::before {
+    content: '';
+    position: absolute;
+    left: -0.75rem;
+    top: 50%;
+    width: 0.5rem;
+    height: 1px;
+    background: var(--color-border);
+  }
+
+  .toc-h3-link {
+    display: block;
+    padding: 0.25rem 0;
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    transition: color 0.2s ease;
+    line-height: 1.4;
+  }
+
+  .toc-h3-link:hover {
+    color: var(--color-text-secondary);
+  }
+
+  .toc-h3-link.active {
+    color: var(--color-blue);
+    font-weight: 500;
+  }
+</style>
+
+<script>
+  /**
+   * 目录滚动监听脚本
+   * 功能：
+   * 1. 高亮当前可见的章节标题
+   * 2. 当滚动到某个 h2 区域时，自动展开其下属的 h3 列表
+   */
+  document.addEventListener('DOMContentLoaded', () => {
+    const h2Links = document.querySelectorAll<HTMLAnchorElement>('.toc-h2-link');
+    const h3Links = document.querySelectorAll<HTMLAnchorElement>('.toc-h3-link');
+    const h3Lists = document.querySelectorAll<HTMLUListElement>('.toc-h3-list');
+    const headingElements = document.querySelectorAll('h2, h3');
+    
+    if (h2Links.length === 0 || headingElements.length === 0) return;
+
+    // 获取所有 h2 的 slug，用于判断当前处于哪个 h2 区域
+    const h2Slugs: string[] = Array.from(h2Links).map(link => link.dataset.heading || '');
+    
+    let currentActiveH2: string | null = null;
+    let currentActiveH3: string | null = null;
+
+    /**
+     * 更新目录状态
+     * @param activeSlug 当前激活的标题 slug
+     */
+    const updateTocState = (activeSlug: string, depth: number) => {
+      // 确定当前所属的 h2
+      let parentH2Slug: string | null = null;
+      
+      if (depth === 2) {
+        parentH2Slug = activeSlug;
+        currentActiveH3 = null;
+      } else if (depth === 3) {
+        // 找到该 h3 所属的 h2
+        const h3Link = document.querySelector<HTMLAnchorElement>(`.toc-h3-link[data-heading="${activeSlug}"]`);
+        if (h3Link) {
+          const parentList = h3Link.closest('.toc-h3-list');
+          if (parentList) {
+            parentH2Slug = (parentList as HTMLElement).dataset.parent || null;
+          }
+        }
+        currentActiveH3 = activeSlug;
+      }
+
+      // 更新 h2 链接样式
+      h2Links.forEach(link => {
+        const slug = link.dataset.heading;
+        if (slug === parentH2Slug) {
+          link.classList.add('active');
+        } else {
+          link.classList.remove('active');
+        }
+      });
+
+      // 更新 h3 链接样式
+      h3Links.forEach(link => {
+        const slug = link.dataset.heading;
+        if (slug === currentActiveH3) {
+          link.classList.add('active');
+        } else {
+          link.classList.remove('active');
+        }
+      });
+
+      // 展开/收起 h3 列表
+      if (parentH2Slug !== currentActiveH2) {
+        currentActiveH2 = parentH2Slug;
+        
+        h3Lists.forEach(list => {
+          const parent = (list as HTMLElement).dataset.parent;
+          if (parent === parentH2Slug) {
+            list.classList.add('expanded');
+          } else {
+            list.classList.remove('expanded');
+          }
+        });
+      }
+    };
+
+    // 使用 Intersection Observer 监听标题可见性
+    const observerOptions: IntersectionObserverInit = {
+      rootMargin: '-80px 0px -70% 0px',
+      threshold: 0,
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const id = entry.target.getAttribute('id');
+          const tagName = entry.target.tagName.toLowerCase();
+          const depth = tagName === 'h2' ? 2 : 3;
+          
+          if (id) {
+            updateTocState(id, depth);
+          }
+        }
+      });
+    }, observerOptions);
+
+    headingElements.forEach((heading) => {
+      if (heading.id) {
+        observer.observe(heading);
+      }
+    });
+
+    // 初始化：激活第一个 h2
+    if (h2Slugs.length > 0) {
+      updateTocState(h2Slugs[0], 2);
+    }
+  });
+</script>
+

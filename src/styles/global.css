@@ -1,0 +1,171 @@
+/* 全局样式 - TailwindCSS v4 配置 */
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+/* 自定义 CSS 变量 - 简约活泼浅色主题 */
+:root {
+  /* 四色系图标/装饰色 - 饱和鲜艳 */
+  --color-orange: #F58220;
+  --color-yellow: #FFD500;
+  --color-blue: #29ABE2;
+  --color-green: #39B54A;
+  
+  /* 主色调 - 使用橙色作为主要交互色 */
+  --color-primary: #F58220;
+  --color-primary-dark: #D96F10;
+  --color-primary-light: #FF9F47;
+  
+  /* 背景色 - 浅灰接近截图 */
+  --color-bg: #EBEBEB;
+  --color-bg-secondary: #FFFFFF;
+  --color-bg-card: #F5F5F5;
+  
+  /* 文字色 */
+  --color-text: #252525;
+  --color-text-secondary: #4A4A4A;
+  --color-text-muted: #7A7A7A;
+  
+  /* 边框色 */
+  --color-border: #DEDEDE;
+  
+  /* 强调色 */
+  --color-accent: #F58220;
+  --color-accent-secondary: #39B54A;
+}
+
+/* 基础样式 */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'Inter', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 链接样式 - 全局默认无下划线 */
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+/* 代码块样式 */
+pre {
+  border-radius: 16px;
+  padding: 1.5rem;
+  overflow-x: auto;
+  background: #1e293b !important;
+}
+
+code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+}
+
+/* 内联代码 */
+:not(pre) > code {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  padding: 0.15em 0.4em;
+  border-radius: 6px;
+  font-size: 0.875em;
+  color: var(--color-text);
+}
+
+/* 选中文字样式 */
+::selection {
+  background-color: var(--color-yellow);
+  color: var(--color-text);
+}
+
+/* 自定义滚动条 - 简洁风格 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Typography 插件自定义 */
+.prose {
+  --tw-prose-body: var(--color-text);
+  --tw-prose-headings: var(--color-text);
+  --tw-prose-links: var(--color-primary);
+  --tw-prose-bold: var(--color-text);
+  --tw-prose-counters: var(--color-text-secondary);
+  --tw-prose-bullets: var(--color-text-muted);
+  --tw-prose-hr: var(--color-border);
+  --tw-prose-quotes: var(--color-text-secondary);
+  --tw-prose-quote-borders: var(--color-orange);
+  --tw-prose-captions: var(--color-text-muted);
+  --tw-prose-code: var(--color-text);
+  --tw-prose-pre-code: #e2e8f0;
+  --tw-prose-pre-bg: #1e293b;
+  --tw-prose-th-borders: var(--color-border);
+  --tw-prose-td-borders: var(--color-border);
+}
+
+/* prose 内链接样式 */
+.prose a {
+  text-decoration: none;
+}
+
+.prose a:hover {
+  color: var(--color-primary);
+}
+
+/* 标题锚点样式 */
+.heading-anchor {
+  opacity: 0;
+  margin-left: 0.5rem;
+  color: var(--color-text-muted);
+  transition: opacity 0.2s ease;
+}
+
+h1:hover .heading-anchor,
+h2:hover .heading-anchor,
+h3:hover .heading-anchor,
+h4:hover .heading-anchor {
+  opacity: 1;
+}
+
+/* 彩色工具类 */
+.icon-orange { color: var(--color-orange); }
+.icon-yellow { color: var(--color-yellow); }
+.icon-blue { color: var(--color-blue); }
+.icon-green { color: var(--color-green); }
+
+.bg-orange { background-color: var(--color-orange); }
+.bg-yellow { background-color: var(--color-yellow); }
+.bg-blue { background-color: var(--color-blue); }
+.bg-green { background-color: var(--color-green); }
+
+/* 卡片悬浮效果 */
+.card-hover {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.1);
+}
+
+/* 平滑过渡动画 */
+.transition-smooth {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}

@@ -1,0 +1,445 @@
+---
+/**
+ * 文章列表页
+ * 显示所有内容（tutorials、notes），支持按类型和标签筛选
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ArticleCard from '../../components/ArticleCard.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import { getCollection, type CollectionEntry } from 'astro:content';
+
+// 获取所有集合的内容
+const works = await getCollection('works', ({ data }: CollectionEntry<'works'>) => !data.draft);
+const tutorials = await getCollection('tutorials', ({ data }: CollectionEntry<'tutorials'>) => !data.draft);
+const notes = await getCollection('notes', ({ data }: CollectionEntry<'notes'>) => !data.draft);
+
+// 定义统一的文章类型
+type Article = {
+  id: string;
+  collection: string;
+  data: {
+    title: string;
+    description?: string;
+    date: Date;
+    tags?: string[];
+    cover?: string;
+    template?: string;
+  };
+};
+
+// 合并所有内容并按日期排序
+const allArticles: Article[] = [
+  ...works.map((w: CollectionEntry<'works'>) => ({ ...w, collection: 'works' })),
+  ...tutorials.map((t: CollectionEntry<'tutorials'>) => ({ ...t, collection: 'tutorials' })),
+  ...notes.map((n: CollectionEntry<'notes'>) => ({ ...n, collection: 'notes' })),
+].sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
+
+// 确保 baseUrl 以斜杠结尾
+const rawBaseUrl = import.meta.env.BASE_URL;
+const baseUrl = rawBaseUrl.endsWith('/') ? rawBaseUrl : `${rawBaseUrl}/`;
+
+// 统计各类型文章数量
+const workCount = allArticles.filter(p => p.data.template === 'work').length;
+const tutorialCount = allArticles.filter(p => p.data.template === 'tutorial').length;
+const noteCount = allArticles.filter(p => p.data.template === 'note' || !p.data.template).length;
+
+// 收集所有唯一标签并统计数量
+const tagCounts: Record<string, number> = {};
+allArticles.forEach(article => {
+  const tags = article.data.tags || [];
+  tags.forEach(tag => {
+    tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+  });
+});
+// 按文章数量排序
+const sortedTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
+
+// 面包屑导航
+const breadcrumbItems = [
+  { label: '首页', href: baseUrl },
+  { label: '文章' },
+];
+---
+
+<BaseLayout title="文章" description="所有博客文章列表">
+  <div class="max-w-6xl mx-auto px-4 py-12">
+    <!-- 面包屑导航 -->
+    <Breadcrumb items={breadcrumbItems} />
+    
+    <!-- 页面标题 -->
+    <header class="mb-8 text-center">
+      <p class="text-xl text-[var(--color-text-secondary)]">
+        共 <span id="article-count">{allArticles.length}</span> 篇文章
+      </p>
+    </header>
+
+    <!-- 筛选按钮 -->
+    <div class="flex flex-wrap justify-center items-center gap-3 mb-10">
+      <button 
+        class="filter-btn active px-5 py-2.5 rounded-full font-medium text-sm transition-all"
+        data-filter="all"
+        style="--btn-color: var(--color-orange);"
+      >
+        全部 <span class="opacity-70">({allArticles.length})</span>
+      </button>
+      <button 
+        class="filter-btn px-5 py-2.5 rounded-full font-medium text-sm transition-all"
+        data-filter="work"
+        style="--btn-color: var(--color-yellow);"
+      >
+        🎨 作品 <span class="opacity-70">({workCount})</span>
+      </button>
+      <button 
+        class="filter-btn px-5 py-2.5 rounded-full font-medium text-sm transition-all"
+        data-filter="tutorial"
+        style="--btn-color: var(--color-blue);"
+      >
+        📚 教程 <span class="opacity-70">({tutorialCount})</span>
+      </button>
+      <button 
+        class="filter-btn px-5 py-2.5 rounded-full font-medium text-sm transition-all"
+        data-filter="note"
+        style="--btn-color: var(--color-green);"
+      >
+        📝 笔记 <span class="opacity-70">({noteCount})</span>
+      </button>
+
+      <!-- 标签下拉筛选器 -->
+      <div class="tag-dropdown relative">
+        <button 
+          id="tag-dropdown-btn"
+          class="tag-dropdown-btn px-5 py-2.5 rounded-full font-medium text-sm transition-all flex items-center gap-2"
+          style="--btn-color: var(--color-primary);"
+        >
+          <span>🏷️ 标签</span>
+          <span id="selected-tag-name" class="opacity-70">全部</span>
+          <svg class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div id="tag-dropdown-menu" class="tag-dropdown-menu hidden absolute top-full right-0 mt-2 w-48 max-h-64 overflow-y-auto bg-white rounded-xl shadow-lg border border-[var(--color-border)] z-50">
+          <button 
+            class="tag-option w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors first:rounded-t-xl"
+            data-tag=""
+          >
+            全部标签
+          </button>
+          {sortedTags.map(([tag, count], index) => (
+            <button 
+              class={`tag-option w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${index === sortedTags.length - 1 ? 'last:rounded-b-xl' : ''}`}
+              data-tag={tag}
+            >
+              #{tag} <span class="text-[var(--color-text-muted)]">({count})</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <!-- 文章列表 -->
+    {allArticles.length > 0 ? (
+      <div id="articles-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {allArticles.map((article) => (
+          <div 
+            class="article-item" 
+            data-template={article.data.template || 'note'}
+            data-tags={JSON.stringify(article.data.tags || [])}
+          >
+            <ArticleCard 
+              title={article.data.title}
+              description={article.data.description}
+              date={article.data.date}
+              tags={article.data.tags}
+              href={`${baseUrl}posts/${article.id}`}
+              cover={article.data.cover}
+              template={article.data.template}
+            />
+          </div>
+        ))}
+      </div>
+    ) : (
+      <div class="text-center py-16 bg-[var(--color-bg-secondary)] rounded-xl border border-[var(--color-border)]">
+        <p class="text-[var(--color-text-muted)] text-lg">
+          暂无文章
+        </p>
+        <p class="text-[var(--color-text-muted)] mt-2">
+          在 <code class="bg-[var(--color-bg-card)] px-2 py-1 rounded">src/content/posts/</code> 目录下创建 Markdown 文件
+        </p>
+      </div>
+    )}
+
+    <!-- 空状态提示 -->
+    <div id="empty-state" class="hidden text-center py-16">
+      <p class="text-[var(--color-text-muted)] text-lg">
+        该分类下暂无文章
+      </p>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  /* 筛选按钮样式 */
+  .filter-btn {
+    background: white;
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    cursor: pointer;
+  }
+  
+  .filter-btn:hover {
+    border-color: var(--btn-color);
+    color: var(--btn-color);
+  }
+  
+  .filter-btn.active {
+    background: var(--btn-color);
+    color: white;
+    border-color: var(--btn-color);
+  }
+
+  /* 标签下拉筛选器样式 */
+  .tag-dropdown-btn {
+    background: white;
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    cursor: pointer;
+  }
+
+  .tag-dropdown-btn:hover {
+    border-color: var(--btn-color);
+    color: var(--btn-color);
+  }
+
+  /* 选中标签时，只有文字变橙色，背景不变 */
+  .tag-dropdown-btn.has-selection {
+    color: var(--color-text-secondary);
+    border-color: var(--color-border);
+  }
+
+  .tag-dropdown-btn.has-selection #selected-tag-name {
+    color: var(--color-orange);
+    opacity: 1;
+  }
+
+  /* 只有展开时箭头才向上 */
+  .tag-dropdown-btn.open svg {
+    transform: rotate(180deg);
+  }
+
+  .tag-dropdown-menu {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+  }
+
+  .tag-dropdown-menu::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .tag-dropdown-menu::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .tag-dropdown-menu::-webkit-scrollbar-thumb {
+    background-color: var(--color-border);
+    border-radius: 3px;
+  }
+
+  .tag-option {
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--color-text);
+  }
+
+  .tag-option:hover {
+    background: var(--color-bg-secondary);
+  }
+
+  .tag-option.selected {
+    background: var(--color-primary);
+    color: white;
+  }
+
+  .tag-option.selected:hover {
+    background: var(--color-primary);
+  }
+
+  /* 文章项过渡动画 */
+  .article-item {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  
+  .article-item.hidden {
+    display: none;
+  }
+</style>
+
+<script>
+  // 筛选功能
+  document.addEventListener('DOMContentLoaded', () => {
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    const articleItems = document.querySelectorAll('.article-item');
+    const articleCount = document.getElementById('article-count');
+    const emptyState = document.getElementById('empty-state');
+    const articlesGrid = document.getElementById('articles-grid');
+
+    // 标签下拉筛选器相关元素
+    const tagDropdownBtn = document.getElementById('tag-dropdown-btn');
+    const tagDropdownMenu = document.getElementById('tag-dropdown-menu');
+    const selectedTagName = document.getElementById('selected-tag-name');
+    const tagOptions = document.querySelectorAll('.tag-option');
+
+    // 当前筛选状态
+    let currentTypeFilter = 'all';
+    let currentTagFilter = '';
+
+    // 从URL获取初始标签参数
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialTag = urlParams.get('tag');
+    if (initialTag) {
+      currentTagFilter = decodeURIComponent(initialTag);
+      if (selectedTagName) {
+        selectedTagName.textContent = currentTagFilter;
+      }
+      // 高亮对应的标签选项
+      tagOptions.forEach(opt => {
+        const optTag = opt.getAttribute('data-tag') || '';
+        if (optTag === currentTagFilter) {
+          opt.classList.add('selected');
+        }
+      });
+      // 标记有选中标签（非"全部"）
+      if (tagDropdownBtn && currentTagFilter) {
+        tagDropdownBtn.classList.add('has-selection');
+      }
+    }
+
+    // 统一的筛选函数
+    function applyFilters() {
+      let visibleCount = 0;
+      articleItems.forEach(item => {
+        const template = item.getAttribute('data-template');
+        const tagsJson = item.getAttribute('data-tags') || '[]';
+        const tags = JSON.parse(tagsJson) as string[];
+
+        // 类型筛选
+        const typeMatch = currentTypeFilter === 'all' || template === currentTypeFilter;
+        // 标签筛选
+        const tagMatch = !currentTagFilter || tags.includes(currentTagFilter);
+
+        const shouldShow = typeMatch && tagMatch;
+
+        if (shouldShow) {
+          item.classList.remove('hidden');
+          visibleCount++;
+        } else {
+          item.classList.add('hidden');
+        }
+      });
+
+      // 更新计数
+      if (articleCount) {
+        articleCount.textContent = visibleCount.toString();
+      }
+
+      // 显示/隐藏空状态
+      if (emptyState && articlesGrid) {
+        if (visibleCount === 0) {
+          emptyState.classList.remove('hidden');
+          articlesGrid.classList.add('hidden');
+        } else {
+          emptyState.classList.add('hidden');
+          articlesGrid.classList.remove('hidden');
+        }
+      }
+    }
+
+    // 类型筛选按钮点击事件
+    filterBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentTypeFilter = btn.getAttribute('data-filter') || 'all';
+        
+        // 更新按钮状态
+        filterBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        applyFilters();
+      });
+    });
+
+    // 标签下拉菜单切换
+    if (tagDropdownBtn && tagDropdownMenu) {
+      tagDropdownBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isHidden = tagDropdownMenu.classList.contains('hidden');
+        if (isHidden) {
+          tagDropdownMenu.classList.remove('hidden');
+          tagDropdownBtn.classList.add('open');
+        } else {
+          tagDropdownMenu.classList.add('hidden');
+          tagDropdownBtn.classList.remove('open');
+        }
+      });
+
+      // 点击其他地方关闭下拉菜单
+      document.addEventListener('click', () => {
+        tagDropdownMenu.classList.add('hidden');
+        tagDropdownBtn.classList.remove('open');
+      });
+
+      // 阻止下拉菜单内部点击冒泡
+      tagDropdownMenu.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+    }
+
+    // 标签选项点击事件
+    tagOptions.forEach(opt => {
+      opt.addEventListener('click', () => {
+        const tag = opt.getAttribute('data-tag') || '';
+        currentTagFilter = tag;
+
+        // 更新显示的标签名
+        if (selectedTagName) {
+          selectedTagName.textContent = tag || '全部';
+        }
+
+        // 更新选中状态
+        tagOptions.forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+
+        // 更新下拉按钮状态：有选中标签时添加 has-selection 类
+        if (tagDropdownBtn) {
+          if (tag) {
+            tagDropdownBtn.classList.add('has-selection');
+          } else {
+            tagDropdownBtn.classList.remove('has-selection');
+          }
+        }
+
+        // 关闭下拉菜单并移除 open 类
+        if (tagDropdownMenu) {
+          tagDropdownMenu.classList.add('hidden');
+        }
+        if (tagDropdownBtn) {
+          tagDropdownBtn.classList.remove('open');
+        }
+
+        // 更新URL参数
+        const url = new URL(window.location.href);
+        if (tag) {
+          url.searchParams.set('tag', tag);
+        } else {
+          url.searchParams.delete('tag');
+        }
+        window.history.replaceState({}, '', url.toString());
+
+        applyFilters();
+      });
+    });
+
+    // 初始化筛选（处理URL参数）
+    applyFilters();
+  });
+</script>
+

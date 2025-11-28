@@ -1,0 +1,156 @@
+---
+/**
+ * 面包屑导航组件
+ * 支持多级导航，简约活泼风格
+ * 支持文章间跳转时显示来源文章路径
+ */
+interface BreadcrumbItem {
+  label: string;
+  href?: string;
+}
+
+interface Props {
+  items: BreadcrumbItem[];
+  /** 当前页面的 slug，用于文章跳转追踪 */
+  currentSlug?: string;
+  /** 当前页面标题，用于文章跳转追踪 */
+  currentTitle?: string;
+}
+
+const { items, currentSlug, currentTitle } = Astro.props;
+---
+
+<nav class="breadcrumb text-lg flex items-center gap-2 flex-wrap" data-current-slug={currentSlug} data-current-title={currentTitle}>
+  {items.map((item, index) => (
+    <>
+      {index > 0 && (
+        <span class="breadcrumb-separator flex items-center text-[var(--color-text-muted)]">
+          <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </span>
+      )}
+      {item.href ? (
+        <a 
+          href={item.href} 
+          class="breadcrumb-link text-[var(--color-text-muted)] hover:text-[var(--color-orange)] transition-colors"
+        >
+          {item.label}
+        </a>
+      ) : (
+        <span class="breadcrumb-current text-[var(--color-text-secondary)] font-medium truncate max-w-[260px]">
+          {item.label}
+        </span>
+      )}
+    </>
+  ))}
+</nav>
+
+<style>
+  .breadcrumb a {
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .breadcrumb a:hover {
+    color: var(--color-orange) !important;
+  }
+</style>
+
+<script>
+  /**
+   * 面包屑导航：文章跳转路径追踪
+   * 当从一篇文章跳转到另一篇文章时，在面包屑中显示来源文章
+   */
+  function initBreadcrumbNavigation() {
+    const breadcrumbs = document.querySelectorAll('.breadcrumb');
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromSlug = urlParams.get('from');
+    const fromTitle = urlParams.get('fromTitle');
+    
+    // 防止重复初始化
+    if (document.querySelector('.breadcrumb[data-initialized="true"]')) {
+      return;
+    }
+    
+    // 如果有来源文章参数，更新面包屑
+    if (fromSlug && fromTitle) {
+      breadcrumbs.forEach(breadcrumb => {
+        // 标记已初始化
+        breadcrumb.setAttribute('data-initialized', 'true');
+        
+        // 找到当前页面标题元素（最后一个 span）
+        const currentPageSpan = breadcrumb.querySelector('.breadcrumb-current');
+        if (!currentPageSpan) return;
+        
+        // 从"文章"链接获取 posts 的基础路径
+        const postsLink = breadcrumb.querySelectorAll('.breadcrumb-link')[1] as HTMLAnchorElement;
+        const postsBase = postsLink?.href?.replace(/\/$/, '') || '/posts';
+        
+        // 创建来源文章链接
+        const fromLink = document.createElement('a');
+        fromLink.href = `${postsBase}/${fromSlug}/`;
+        fromLink.className = 'breadcrumb-link text-[var(--color-text-muted)] hover:text-[var(--color-orange)] transition-colors';
+        fromLink.textContent = fromTitle;
+        fromLink.style.textDecoration = 'none';
+        fromLink.style.cursor = 'pointer';
+        
+        // 创建分隔符
+        const separator = document.createElement('span');
+        separator.className = 'breadcrumb-separator flex items-center text-[var(--color-text-muted)]';
+        separator.innerHTML = '<svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>';
+        
+        // 在当前页面标题前插入来源文章和分隔符
+        const lastSeparator = currentPageSpan.previousElementSibling;
+        if (lastSeparator) {
+          lastSeparator.after(fromLink, separator);
+        }
+      });
+    }
+    
+    // 为当前页面的文章内链接添加来源参数
+    const currentSlug = document.querySelector('.breadcrumb')?.getAttribute('data-current-slug');
+    const currentTitle = document.querySelector('.breadcrumb')?.getAttribute('data-current-title');
+    
+    if (currentSlug && currentTitle) {
+      // 查找文章内容区域的内部链接（包含 /posts/ 的链接）
+      const articleLinks = document.querySelectorAll(
+        '.tutorial-content a[href*="/posts/"], .tutorial-content a[href*="posts/"], .prose a[href*="/posts/"], article a[href*="/posts/"]'
+      );
+      
+      articleLinks.forEach(link => {
+        const anchor = link as HTMLAnchorElement;
+        // 跳过已处理的链接
+        if (anchor.hasAttribute('data-breadcrumb-processed')) return;
+        anchor.setAttribute('data-breadcrumb-processed', 'true');
+        
+        const href = anchor.getAttribute('href');
+        if (!href) return;
+        
+        // 跳过已经有参数的链接、外部链接、锚点链接
+        if (href.includes('from=') || href.startsWith('http') || href.startsWith('#')) return;
+        
+        // 跳过指向当前页面的链接
+        if (href.includes(currentSlug)) return;
+        
+        // 添加来源参数
+        const separator = href.includes('?') ? '&' : '?';
+        anchor.setAttribute('href', `${href}${separator}from=${encodeURIComponent(currentSlug)}&fromTitle=${encodeURIComponent(currentTitle)}`);
+      });
+    }
+  }
+  
+  // 页面加载时初始化
+  document.addEventListener('DOMContentLoaded', initBreadcrumbNavigation);
+  // Astro 页面切换时重新初始化
+  document.addEventListener('astro:page-load', () => {
+    // 移除初始化标记以便重新初始化
+    document.querySelectorAll('.breadcrumb[data-initialized]').forEach(el => {
+      el.removeAttribute('data-initialized');
+    });
+    document.querySelectorAll('[data-breadcrumb-processed]').forEach(el => {
+      el.removeAttribute('data-breadcrumb-processed');
+    });
+    initBreadcrumbNavigation();
+  });
+</script>
+

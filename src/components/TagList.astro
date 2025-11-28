@@ -1,0 +1,53 @@
+---
+/**
+ * 标签列表组件
+ * 简约活泼风格，使用四色系
+ */
+interface Props {
+  tags: string[];
+  size?: 'sm' | 'md';
+  clickable?: boolean;
+}
+
+const { tags, size = 'md', clickable = true } = Astro.props;
+
+// 确保 baseUrl 以斜杠结尾
+const rawBaseUrl = import.meta.env.BASE_URL;
+const baseUrl = rawBaseUrl.endsWith('/') ? rawBaseUrl : `${rawBaseUrl}/`;
+
+// 尺寸配置
+const sizeClasses = {
+  sm: 'px-2.5 py-0.5 text-xs',
+  md: 'px-3 py-1 text-sm',
+};
+
+// 标签颜色循环 - 使用四色系
+const tagColors = [
+  { bg: 'rgba(245, 166, 35, 0.1)', text: '#D4890F', border: 'rgba(245, 166, 35, 0.2)' },  // 橙色
+  { bg: 'rgba(74, 159, 232, 0.1)', text: '#3A8FD8', border: 'rgba(74, 159, 232, 0.2)' },  // 蓝色
+  { bg: 'rgba(90, 199, 90, 0.1)', text: '#3DA33D', border: 'rgba(90, 199, 90, 0.2)' },    // 绿色
+  { bg: 'rgba(248, 214, 78, 0.15)', text: '#B89A00', border: 'rgba(248, 214, 78, 0.3)' }, // 黄色
+];
+---
+
+<div class="flex flex-wrap gap-2">
+  {tags.map((tag, index) => {
+    const colorSet = tagColors[index % tagColors.length];
+    return clickable ? (
+      <a 
+        href={`${baseUrl}posts?tag=${encodeURIComponent(tag)}`}
+        class={`inline-block rounded-full ${sizeClasses[size]} font-medium transition-all hover:scale-105 no-underline`}
+        style={`background: ${colorSet.bg}; color: ${colorSet.text}; border: 1px solid ${colorSet.border};`}
+      >
+        #{tag}
+      </a>
+    ) : (
+      <span 
+        class={`inline-block rounded-full ${sizeClasses[size]} font-medium`}
+        style={`background: ${colorSet.bg}; color: ${colorSet.text}; border: 1px solid ${colorSet.border};`}
+      >
+        #{tag}
+      </span>
+    );
+  })}
+</div>
