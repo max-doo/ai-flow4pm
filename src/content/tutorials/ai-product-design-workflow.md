@@ -410,7 +410,7 @@ order: 1
    ![首页](/img/ai-product-design-workflow/cityfun.png)
    ![分析](/img/ai-product-design-workflow/cityfun2.png)
    ![商城](/img/ai-product-design-workflow/cityfun3.png)
-   ![我的](/img/ai-product-design-workflow/cityfun3.png)
+   ![我的](/img/ai-product-design-workflow/cityfun4.png)
 
 ### **鲸舰迭代-会员反馈功能Demo（Cursor开发）**
    [查看原型](https://max-doo.github.io/jingjian-customer-service/)
@@ -421,4 +421,4 @@ order: 1
    [查看原型](https://max-doo.github.io/invoice-app/)
 
    ![首页](/img/ai-product-design-workflow/invoice.png)
-   ![开票记录](/img/ai-product-design-workflow/invoice.png)
+   ![开票记录](/img/ai-product-design-workflow/invoice2.png)

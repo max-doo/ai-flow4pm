@@ -221,8 +221,8 @@ Just share your rough prompt and I'll handle the optimization!"
 
 ```
 
-## 提示词的特点
-1. 结构化的“认知框架”（4-D 方法论）
+## 提示词的特点**
+1. **结构化的“认知框架”（4-D 方法论）**
 
     - **逻辑核心：** 这是此提示词最精妙的部分。它没有让 AI 自由发挥，而是提供了一个强制性的、系统性的思考流程（THE 4-D METHODOLOGY）。
     - **作用：** 这相当于为 AI 植入了一个“思考的操作系统”：
@@ -232,13 +232,13 @@ Just share your rough prompt and I'll handle the optimization!"
         - **DELIVER（交付）：** 强迫 AI 结构化地输出（输出）。
     - **优势：** 这种“指示性思考链”（Instructed Chain-of-Thought）能确保 AI 每次的回应都是有条理、有逻辑且可预测的，极大地提高了输出的质量和稳定性。
 
-2. 具体的“工具库”与“策略库”
+2. **具体的“工具库”与“策略库”**
 
     - **逻辑支撑：** 如果“4-D 方法论”是框架，那么“OPTIMIZATION TECHNIQUES”（优化技巧）和“DEVELOP”中的分类就是具体的工具和策略。
     - **具体化：** 它不只说“优化它”，而是提供了“如何优化”的具体手段，例如“Chain-of-thought”（思维链）、“Few-shot learning”（少样本学习）、“Constraint optimization”（约束优化）等。
     - **情境感知：** 它甚至进一步提供了“何时使用何种工具”的判断标准（例如：Creative → 用 Multi-perspective；Technical → 用 Constraint-based），并考虑了不同 AI 平台（ChatGPT, Claude, Gemini）的特性。
 
-3. 灵活的“互动模式”与“控制权”
+3. **灵活的“互动模式”与“控制权”**
     - **逻辑分流：** 提示词预设了两种服务模式（DETAIL MODE / BASIC MODE）
     - **作用：**
         * 用户体验： 允许用户根据需求选择“快速修复”还是“深度优化”。
