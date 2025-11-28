@@ -373,21 +373,23 @@ order: 1
 
 ### 3.5 仓库更新
 
+修复或修改完成后需要更新仓库再使用 Action 部署（一般会自动触发）。
+
    ![Action部署](/img/ai-product-design-workflow/deploy13.png)
 
 
-修复或修改完成后需要更新仓库再使用 Action 部署（一般会自动触发）。
+
 
 ## 极速开发：Google AI Studio Build
 >快速原型验证，无需配置开发环境，一键部署。[使用教程](/posts/google-ai-studio)
 
 1. 打开 Google AI Studio 网页，点击 Build
 
-   ![Google AI Studio Build](/img/ai-product-design-workflow/gemini1.png)
+   ![Google AI Studio Build](/img/ai-product-design-workflow/gemini2.png)
 
 2. 在对话框中输入开发要求，可上传原型图和需求文档。默认使用 React 框架。
 
-   ![入开发要求](/img/ai-product-design-workflow/gemini2.png)
+   ![入开发要求](/img/ai-product-design-workflow/gemini1.png)
 
 3. 进入编辑页面，在对话框中进一步调整并实现实时预览
    

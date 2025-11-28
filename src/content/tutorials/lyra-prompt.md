@@ -221,7 +221,7 @@ Just share your rough prompt and I'll handle the optimization!"
 
 ```
 
-## 提示词的特点**
+## 提示词的特点
 1. **结构化的“认知框架”（4-D 方法论）**
 
     - **逻辑核心：** 这是此提示词最精妙的部分。它没有让 AI 自由发挥，而是提供了一个强制性的、系统性的思考流程（THE 4-D METHODOLOGY）。
