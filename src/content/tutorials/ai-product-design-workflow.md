@@ -298,7 +298,7 @@ order: 1
    1. **任务拆解**：将大任务拆解为小任务逐一执行，每完成一步进行 Review，避免大量回滚消耗 Token。
    2. **模型选择**：
       * 复杂的任务用 Claude 4.5 或者 GPT-5，比如要实现一些稍微复杂的UI效果、逻辑或交互；
-      * Claude 4.5 响应比 GPT-5 快，优先使用 Claude 4，但是 GPT-5 对复杂任务的执行力和实现效果比 Claude 4 好，如果遇到 Claude 4 无法解决的问题可以让 GPT-5 尝试（现在推出了Claude Opus4.5，目前在LMArena上是编程能力排名第一的模型，相应速度同样很快）
+      * Claude 4.5 响应比 GPT-5 快，优先使用Claude，但是GPT对复杂任务的执行力和实现效果比Claude好，如果遇到Claude无法解决的问题可以让GPT尝试（现在推出了Claude Opus4.5，目前在LMArena上是编程能力排名第一的模型，相应速度同样很快）
       * 简单的任务用 auto 模式（无限使用），遇到 auto 模式解决不了的问题用 Claude 4.5 或者 GPT-5。  
    3. **避免"修复循环"**：变更或者修复某个代码块时，如果修复了两次以上都没有修复，直接回滚，用 GPT-5 并使用 Context7 让其查阅官方文档后再修复问题。避免反复去修改同一个问题，因为这样可能会导致新的问题。
    4. **精准修复**：
@@ -398,6 +398,7 @@ order: 1
    ![一键部署](/img/ai-product-design-workflow/gemini4.png)
 
 **Google AI Studio 的开发效果：UI美观，还原度高。下面是其复刻一个小程序页面的效果。** 
+
    ![原页面](/img/ai-product-design-workflow/disney.jpg)
    ![复刻的页面](/img/ai-product-design-workflow/disney2.png)
 

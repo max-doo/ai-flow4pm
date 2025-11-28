@@ -1,5 +1,5 @@
 ---
-title: "欢迎来到 AI Flow Blog"
+title: "欢迎来到 AI Flow 4 PM"
 description: "这是一个基于 Astro 和 Markdown 构建的博客网站，支持多种文章模板"
 date: 2025-11-26
 template: note
@@ -10,7 +10,7 @@ author: "AI Flow"
 
 ## 欢迎
 
-欢迎来到 **AI Flow Blog**！这是一个基于 [Astro](https://astro.build) 框架构建的博客网站，专为 Markdown 内容创作者设计。
+欢迎来到 **AI Flow 4 PM**！这是一个基于 [Astro](https://astro.build) 框架构建的博客网站，专为 Markdown 内容创作者设计。
 
 ## 功能特点
 
